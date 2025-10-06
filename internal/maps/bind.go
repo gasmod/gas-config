@@ -604,6 +604,17 @@ func setBasicKind(dst reflect.Value, v any) error {
 
 		return nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		if dt := dst.Type(); dt.PkgPath() == "time" && dt.Name() == "Duration" {
+			i, err := toDuration(v)
+			if err != nil {
+				return err
+			}
+
+			dst.SetInt(int64(i))
+
+			return nil
+		}
+
 		i, err := toInt64(v)
 		if err != nil {
 			return err
@@ -725,6 +736,26 @@ func toInt64(val any) (int64, error) {
 		return int64(typ), nil
 	default:
 		return 0, fmt.Errorf("%w %T", ErrCannotConvertToInt64, val)
+	}
+}
+
+func toDuration(value any) (time.Duration, error) {
+	switch typedValue := value.(type) {
+	case time.Duration:
+		return typedValue, nil
+	case int64:
+		return time.Duration(typedValue), nil
+	case string:
+		switch typedValue[len(typedValue)-1:] {
+		case "s", "m", "h": // "s" captures "ns", "us", "µs", "ms", and "s"
+			return time.ParseDuration(typedValue)
+		default:
+			i, err := strconv.ParseInt(typedValue, 10, 64)
+
+			return time.Duration(i), err
+		}
+	default:
+		return 0, fmt.Errorf("%w %T", ErrCannotConvertToInt64, value)
 	}
 }
 

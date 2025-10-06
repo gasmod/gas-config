@@ -2,6 +2,7 @@ package maps_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/ahmedkamalio/gcfg/internal/maps"
 	"github.com/stretchr/testify/assert"
@@ -133,4 +134,35 @@ func TestUnbind_EmbeddedStruct(t *testing.T) {
 	assert.Equal(t, "embedded_value", dest["mykey"])
 	assert.Equal(t, 42, dest["value"])
 	assert.Equal(t, "parent_name", dest["name"])
+}
+
+func TestBind_DurationField(t *testing.T) {
+	t.Parallel()
+
+	type Struct struct {
+		Int64    time.Duration
+		Duration time.Duration
+		String0  time.Duration
+		String1  time.Duration
+		String2  time.Duration
+	}
+
+	src := map[string]any{
+		"int64":    int64(1 * time.Second),
+		"duration": 2 * time.Minute,
+		"string0":  "300ms",
+		"string1":  "-1.5h",
+		"string2":  "2h45m",
+	}
+
+	var dest Struct
+
+	err := maps.Bind(src, &dest)
+	require.NoError(t, err)
+
+	assert.Equal(t, 1*time.Second, dest.Int64)
+	assert.Equal(t, 2*time.Minute, dest.Duration)
+	assert.Equal(t, 300*time.Millisecond, dest.String0)
+	assert.Equal(t, -(90 * time.Minute), dest.String1)
+	assert.Equal(t, 165*time.Minute, dest.String2)
 }
