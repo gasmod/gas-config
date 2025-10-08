@@ -30,9 +30,7 @@ func TestBind_EmbeddedStruct(t *testing.T) {
 	}
 
 	var dest Parent
-
-	err := maps.Bind(src, &dest)
-	require.NoError(t, err)
+	require.NoError(t, maps.Bind(src, &dest))
 
 	// These should work with embedded structs
 	assert.Equal(t, "embedded_value", dest.MyKey)
@@ -66,9 +64,7 @@ func TestBind_NestedEmbeddedStruct(t *testing.T) {
 	}
 
 	var dest Parent
-
-	err := maps.Bind(src, &dest)
-	require.NoError(t, err)
+	require.NoError(t, maps.Bind(src, &dest))
 
 	assert.Equal(t, "level1_value", dest.Field1)
 	assert.Equal(t, "level2_value", dest.Field2)
@@ -94,9 +90,7 @@ func TestBind_EmbeddedStructWithPointer(t *testing.T) {
 	}
 
 	var dest Parent
-
-	err := maps.Bind(src, &dest)
-	require.NoError(t, err)
+	require.NoError(t, maps.Bind(src, &dest))
 
 	assert.Equal(t, "parent_name", dest.Name)
 	// Embedded pointer should be initialized and populated
@@ -127,8 +121,7 @@ func TestUnbind_EmbeddedStruct(t *testing.T) {
 	}
 
 	dest := make(map[string]any)
-	err := maps.Unbind(&src, dest)
-	require.NoError(t, err)
+	require.NoError(t, maps.Unbind(&src, dest))
 
 	// All fields should be available at the top level
 	assert.Equal(t, "embedded_value", dest["mykey"])
@@ -156,13 +149,31 @@ func TestBind_DurationField(t *testing.T) {
 	}
 
 	var dest Struct
-
-	err := maps.Bind(src, &dest)
-	require.NoError(t, err)
+	require.NoError(t, maps.Bind(src, &dest))
 
 	assert.Equal(t, 1*time.Second, dest.Int64)
 	assert.Equal(t, 2*time.Minute, dest.Duration)
 	assert.Equal(t, 300*time.Millisecond, dest.String0)
 	assert.Equal(t, -(90 * time.Minute), dest.String1)
 	assert.Equal(t, 165*time.Minute, dest.String2)
+}
+
+func TestBind_Array(t *testing.T) {
+	t.Parallel()
+
+	type Struct struct {
+		Str []string
+		Int []int
+	}
+
+	src := map[string]any{
+		"str": "a,b,c",
+		"int": "1,2,3",
+	}
+
+	var dest Struct
+	require.NoError(t, maps.Bind(src, &dest))
+
+	assert.Equal(t, []string{"a", "b", "c"}, dest.Str)
+	assert.Equal(t, []int{1, 2, 3}, dest.Int)
 }

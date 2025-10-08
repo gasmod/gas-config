@@ -90,11 +90,6 @@ var (
 	// ErrNegativeFloatCannotConvert indicates when a negative float value cannot be converted to uint64.
 	ErrNegativeFloatCannotConvert = errors.New("negative float cannot convert to uint64")
 
-	// Array/slice errors...
-
-	// ErrArrayLengthMismatch indicates a mismatch between source array/slice length and destination array length.
-	ErrArrayLengthMismatch = errors.New("array length mismatch")
-
 	// Map errors...
 
 	// ErrMapKeyConversion indicates an error during conversion of a map key.
@@ -129,8 +124,7 @@ func Bind(src map[string]any, dest any) error {
 				continue
 			}
 
-			err := setValue(fv, v)
-			if err != nil {
+			if err := setValue(fv, v); err != nil {
 				return fmt.Errorf("field %s: %w", fi.Name, err)
 			}
 		}
@@ -517,6 +511,25 @@ func setValue(dst reflect.Value, v any) error {
 
 			return nil
 		}
+
+		// if src is string, expect comma-separated values
+		if str, ok := v.(string); ok {
+			parts := strings.Split(str, ",")
+
+			if dst.Len() < len(parts) {
+				dst.Grow(len(parts))
+				dst.SetLen(len(parts))
+			}
+
+			for i, part := range parts {
+				if err := setValue(dst.Index(i), strings.TrimSpace(part)); err != nil {
+					return fmt.Errorf("array index %d: %w", i, err)
+				}
+			}
+
+			return nil
+		}
+
 		// if src is slice/array assignable/convertible
 		if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
 			// try direct conversion if types align
@@ -548,23 +561,23 @@ func setValue(dst reflect.Value, v any) error {
 	case reflect.Array:
 		// handle arrays similarly but must match length
 		if arr, ok := v.([]any); ok {
-			if len(arr) != dst.Len() {
-				return fmt.Errorf("%w: dest %d src %d", ErrArrayLengthMismatch, dst.Len(), len(arr))
+			if dst.Len() < len(arr) {
+				dst.Grow(len(arr))
+				dst.SetLen(len(arr))
 			}
 
 			for i := range dst.Len() {
-				err := setValue(dst.Index(i), arr[i])
-				if err != nil {
+				if err := setValue(dst.Index(i), arr[i]); err != nil {
 					return fmt.Errorf("array index %d: %w", i, err)
 				}
 			}
 
 			return nil
 		}
+
 		// try assignable
 		if srcVal.Type().AssignableTo(dst.Type()) {
 			dst.Set(srcVal)
-
 			return nil
 		}
 
