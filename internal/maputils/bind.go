@@ -1,4 +1,4 @@
-// Package maps provides utilities for deep binding and merging of maps into Go data structures.
+// Package maputils provides utilities for deep binding and merging of maps into Go data structures.
 // It supports recursive binding of map[string]any into structs with handling for nested types:
 // structs, slices, arrays, maps and pointers. Field matching uses json tags (if present) then
 // case-insensitive field names.
@@ -15,7 +15,7 @@
 //   - Handling of nested types (structs, slices, arrays, maps)
 //   - Pointer auto-initialization
 //   - Detailed error reporting
-package maps
+package maputils
 
 import (
 	"errors"

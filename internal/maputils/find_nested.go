@@ -1,4 +1,4 @@
-package maps
+package maputils
 
 // FindNestedMap traverses a nested map based on the provided pathParts and returns
 // the target map at the end of the path.

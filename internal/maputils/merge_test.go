@@ -1,9 +1,9 @@
-package maps_test
+package maputils_test
 
 import (
 	"testing"
 
-	"github.com/gasmod/gas-config/internal/maps"
+	"github.com/gasmod/gas-config/internal/maputils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -114,7 +114,7 @@ func TestMerge(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			maps.Merge(tt.dst, tt.src)
+			maputils.Merge(tt.dst, tt.src)
 			assert.Equal(t, tt.expected, tt.dst)
 		})
 	}
@@ -281,7 +281,7 @@ func TestMergeWithoutOverride(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			maps.MergeWithoutOverride(tt.dst, tt.src)
+			maputils.MergeWithoutOverride(tt.dst, tt.src)
 			assert.Equal(t, tt.expected, tt.dst)
 		})
 	}
@@ -307,7 +307,7 @@ func TestMerge_vs_MergeWithoutOverride(t *testing.T) {
 		},
 	}
 
-	maps.Merge(dstMerge, src)
+	maputils.Merge(dstMerge, src)
 
 	expectedMerge := map[string]any{
 		"key1": "new1", // overridden
@@ -327,7 +327,7 @@ func TestMerge_vs_MergeWithoutOverride(t *testing.T) {
 		},
 	}
 
-	maps.MergeWithoutOverride(dstMergeWithoutOverride, src)
+	maputils.MergeWithoutOverride(dstMergeWithoutOverride, src)
 
 	expectedMergeWithoutOverride := map[string]any{
 		"key1": "original1", // NOT overridden

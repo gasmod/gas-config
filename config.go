@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/gasmod/gas-config/internal/maps"
+	"github.com/gasmod/gas-config/internal/maputils"
 	"github.com/gasmod/gas-config/internal/reflection"
 	"github.com/go-playground/validator/v10"
 )
@@ -49,7 +49,7 @@ func (c *Config) SetDefault(key string, value any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	finalMap := maps.FindNestedMap(c.values, pathParts, true)
+	finalMap := maputils.FindNestedMap(c.values, pathParts, true)
 	if finalMap != nil {
 		// Only set the value if the key doesn't already exist
 		if _, exists := finalMap[finalKey]; !exists {
@@ -69,24 +69,24 @@ func (c *Config) SetDefaults(values any) error {
 	defer c.mu.Unlock()
 
 	if val, ok := values.(map[string]any); ok {
-		maps.MergeWithoutOverride(c.values, val)
+		maputils.MergeWithoutOverride(c.values, val)
 
 		return nil
 	}
 
 	if val, ok := values.(*map[string]any); ok {
-		maps.MergeWithoutOverride(c.values, *val)
+		maputils.MergeWithoutOverride(c.values, *val)
 
 		return nil
 	}
 
 	tempValues := make(map[string]any)
-	if err := maps.Unbind(values, tempValues); err != nil {
+	if err := maputils.Unbind(values, tempValues); err != nil {
 		return fmt.Errorf("unbind defaults: %w", err)
 	}
 
-	maps.LowercaseKeys(tempValues)
-	maps.MergeWithoutOverride(c.values, tempValues)
+	maputils.LowercaseKeys(tempValues)
+	maputils.MergeWithoutOverride(c.values, tempValues)
 
 	return nil
 }
@@ -103,7 +103,7 @@ func (c *Config) Set(key string, value any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	finalMap := maps.FindNestedMap(c.values, pathParts, true)
+	finalMap := maputils.FindNestedMap(c.values, pathParts, true)
 	if finalMap != nil {
 		finalMap[finalKey] = value
 	}
@@ -136,7 +136,7 @@ func (c *Config) loadWithContext(ctx context.Context) error {
 			return fmt.Errorf("%w %s: %w", ErrProviderLoadFailed, p.Name(), err)
 		}
 		// Merge values, later providers override
-		maps.Merge(c.values, values)
+		maputils.Merge(c.values, values)
 	}
 
 	c.mu.Unlock()
@@ -161,7 +161,7 @@ func (c *Config) Bind(dest any, options ...BindOption) error {
 	}
 
 	c.mu.RLock()
-	err := maps.Bind(c.values, dest)
+	err := maputils.Bind(c.values, dest)
 	c.mu.RUnlock()
 
 	if err != nil {
@@ -188,7 +188,7 @@ func (c *Config) Get(key string) any {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	finalMap := maps.FindNestedMap(c.values, pathParts, false)
+	finalMap := maputils.FindNestedMap(c.values, pathParts, false)
 	if finalMap != nil {
 		return reflection.Clone(finalMap[finalKey])
 	}
@@ -208,7 +208,7 @@ func (c *Config) Find(key string) (value any, exist bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	finalMap := maps.FindNestedMap(c.values, pathParts, false)
+	finalMap := maputils.FindNestedMap(c.values, pathParts, false)
 	if finalMap != nil {
 		var found any
 		if found, exist = finalMap[finalKey]; exist {

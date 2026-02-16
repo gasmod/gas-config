@@ -1,9 +1,9 @@
-package maps_test
+package maputils_test
 
 import (
 	"testing"
 
-	"github.com/gasmod/gas-config/internal/maps"
+	"github.com/gasmod/gas-config/internal/maputils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -114,7 +114,7 @@ func TestFindNestedMap(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			result := maps.FindNestedMap(tt.m, tt.pathParts, tt.create)
+			result := maputils.FindNestedMap(tt.m, tt.pathParts, tt.create)
 			assert.Equal(t, tt.expected, result,
 				"(%s): FindNestedMap(%v, %v, %v) = %v, expected %v",
 				tt.name,

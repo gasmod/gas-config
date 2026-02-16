@@ -1,10 +1,10 @@
-package maps_test
+package maputils_test
 
 import (
 	"testing"
 	"time"
 
-	"github.com/gasmod/gas-config/internal/maps"
+	"github.com/gasmod/gas-config/internal/maputils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,7 +29,7 @@ func TestBind_EmbeddedStruct(t *testing.T) {
 	}
 
 	var dest Parent
-	require.NoError(t, maps.Bind(src, &dest))
+	require.NoError(t, maputils.Bind(src, &dest))
 
 	// These should work with embedded structs
 	assert.Equal(t, "embedded_value", dest.MyKey)
@@ -63,7 +63,7 @@ func TestBind_NestedEmbeddedStruct(t *testing.T) {
 	}
 
 	var dest Parent
-	require.NoError(t, maps.Bind(src, &dest))
+	require.NoError(t, maputils.Bind(src, &dest))
 
 	assert.Equal(t, "level1_value", dest.Field1)
 	assert.Equal(t, "level2_value", dest.Field2)
@@ -89,7 +89,7 @@ func TestBind_EmbeddedStructWithPointer(t *testing.T) {
 	}
 
 	var dest Parent
-	require.NoError(t, maps.Bind(src, &dest))
+	require.NoError(t, maputils.Bind(src, &dest))
 
 	assert.Equal(t, "parent_name", dest.Name)
 	// Embedded pointer should be initialized and populated
@@ -119,7 +119,7 @@ func TestUnbind_EmbeddedStruct(t *testing.T) {
 	}
 
 	dest := make(map[string]any)
-	require.NoError(t, maps.Unbind(&src, dest))
+	require.NoError(t, maputils.Unbind(&src, dest))
 
 	// All fields should be available at the top level
 	assert.Equal(t, "embedded_value", dest["mykey"])
@@ -147,7 +147,7 @@ func TestBind_DurationField(t *testing.T) {
 	}
 
 	var dest Struct
-	require.NoError(t, maps.Bind(src, &dest))
+	require.NoError(t, maputils.Bind(src, &dest))
 
 	assert.Equal(t, 1*time.Second, dest.Int64)
 	assert.Equal(t, 2*time.Minute, dest.Duration)
@@ -170,7 +170,7 @@ func TestBind_Array(t *testing.T) {
 	}
 
 	var dest Struct
-	require.NoError(t, maps.Bind(src, &dest))
+	require.NoError(t, maputils.Bind(src, &dest))
 
 	assert.Equal(t, []string{"a", "b", "c"}, dest.Str)
 	assert.Equal(t, []int{1, 2, 3}, dest.Int)
