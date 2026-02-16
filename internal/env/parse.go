@@ -42,6 +42,10 @@ func ParseVariables(vars map[string]string, pre, sep string, normalizeKey bool) 
 			}
 		}
 
+		// Save the prefix-stripped key before further modifications,
+		// so we can also build nested maps using standard "_" separator.
+		strippedKey := normalizedKey
+
 		// The user's provided separator is usually "__", normalizing the keys
 		// by removing '_' will likely break the user's provided separator.
 		normalizedKey = strings.ReplaceAll(normalizedKey, sep, objSep)
@@ -65,6 +69,13 @@ func ParseVariables(vars map[string]string, pre, sep string, normalizeKey bool) 
 			BuildNestedMap(data, key, value, sep)
 		} else {
 			data[key] = value
+		}
+
+		// Also build nested map using standard "_" separator, so that env vars
+		// like "MY_ENV" are discoverable as nested keys (my -> env) in addition
+		// to the longer namespace-based separator (e.g., "MY__ENV").
+		if sep != "" && sep != envSep {
+			BuildNestedMap(data, strippedKey, value, envSep)
 		}
 	}
 

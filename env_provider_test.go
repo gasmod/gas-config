@@ -47,6 +47,52 @@ func TestEnvProvider_WithEnvSeparator(t *testing.T) {
 	assert.Equal(t, "test_value", values["test"].(map[string]any)["key"])
 }
 
+func TestEnvProvider_StandardNameDiscovery(t *testing.T) {
+	t.Setenv("DB_HOST", "localhost")
+
+	p := gcfg.NewEnvProvider()
+
+	values, err := p.Load()
+	require.NoError(t, err)
+
+	t.Log(values)
+
+	// Value can be accessed as nested map via standard "_" separator
+	nested, ok := values["db"].(map[string]any)
+	assert.True(t, ok, "expected nested map under 'db'")
+	assert.Equal(t, "localhost", nested["host"])
+
+	// Original flat key still accessible
+	assert.Equal(t, "localhost", values["db_host"])
+
+	// Normalized key still accessible
+	assert.Equal(t, "localhost", values["dbhost"])
+}
+
+func TestEnvProvider_StandardNameDiscoveryWithPrefix(t *testing.T) {
+	t.Setenv("MYAPP_DB_HOST", "localhost")
+
+	p := gcfg.NewEnvProvider(
+		gcfg.WithEnvPrefix("MYAPP_"),
+	)
+
+	values, err := p.Load()
+	require.NoError(t, err)
+
+	t.Log(values)
+
+	// After prefix stripping, "DB_HOST" is nested via "_"
+	nested, ok := values["db"].(map[string]any)
+	assert.True(t, ok, "expected nested map under 'db'")
+	assert.Equal(t, "localhost", nested["host"])
+
+	// Original flat key still accessible
+	assert.Equal(t, "localhost", values["myapp_db_host"])
+
+	// Normalized key still accessible
+	assert.Equal(t, "localhost", values["dbhost"])
+}
+
 func TestEnvProvider_WithEnvNormalizeVarNames(t *testing.T) {
 	t.Setenv("TEST_KEY", "test_value")
 
