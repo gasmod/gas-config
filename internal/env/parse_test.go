@@ -24,6 +24,8 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 			sep:          "__",
 			normalizeKey: true,
 			check: func(t *testing.T, data map[string]any) {
+				t.Helper()
+
 				// Nested via standard "_" separator
 				nested, ok := data["my"].(map[string]any)
 				assert.True(t, ok, "expected nested map under 'my'")
@@ -42,6 +44,8 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 			sep:          "__",
 			normalizeKey: true,
 			check: func(t *testing.T, data map[string]any) {
+				t.Helper()
+
 				nested, ok := data["my"].(map[string]any)
 				assert.True(t, ok, "expected nested map under 'my'")
 				assert.Equal(t, "val", nested["env"])
@@ -53,6 +57,8 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 			sep:          "__",
 			normalizeKey: true,
 			check: func(t *testing.T, data map[string]any) {
+				t.Helper()
+
 				nested, ok := data["db"].(map[string]any)
 				assert.True(t, ok, "expected nested map under 'db'")
 				assert.Equal(t, "single", nested["host"])
@@ -65,6 +71,8 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 			sep:          "__",
 			normalizeKey: true,
 			check: func(t *testing.T, data map[string]any) {
+				t.Helper()
+
 				db, ok := data["db"].(map[string]any)
 				assert.True(t, ok, "expected nested map under 'db'")
 				host, ok := db["host"].(map[string]any)
@@ -79,6 +87,8 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 			sep:          "__",
 			normalizeKey: true,
 			check: func(t *testing.T, data map[string]any) {
+				t.Helper()
+
 				nested, ok := data["db"].(map[string]any)
 				assert.True(t, ok, "expected nested map under 'db'")
 				assert.Equal(t, "localhost", nested["host"])
@@ -90,6 +100,8 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 			sep:          "_",
 			normalizeKey: true,
 			check: func(t *testing.T, data map[string]any) {
+				t.Helper()
+
 				// When sep is already "_", the existing nesting handles it
 				nested, ok := data["my"].(map[string]any)
 				assert.True(t, ok, "expected nested map under 'my'")
@@ -102,6 +114,8 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 			sep:          "",
 			normalizeKey: true,
 			check: func(t *testing.T, data map[string]any) {
+				t.Helper()
+
 				// No nesting when sep is empty, original flat key is accessible
 				assert.Equal(t, "val", data["my_env"])
 				// No nested structure created
@@ -114,6 +128,8 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 			sep:          "__",
 			normalizeKey: false,
 			check: func(t *testing.T, data map[string]any) {
+				t.Helper()
+
 				// Standard "_" nesting still works without normalization
 				nested, ok := data["my"].(map[string]any)
 				assert.True(t, ok, "expected nested map under 'my'")

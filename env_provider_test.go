@@ -55,8 +55,6 @@ func TestEnvProvider_StandardNameDiscovery(t *testing.T) {
 	values, err := p.Load()
 	require.NoError(t, err)
 
-	t.Log(values)
-
 	// Value can be accessed as nested map via standard "_" separator
 	nested, ok := values["db"].(map[string]any)
 	assert.True(t, ok, "expected nested map under 'db'")
@@ -78,8 +76,6 @@ func TestEnvProvider_StandardNameDiscoveryWithPrefix(t *testing.T) {
 
 	values, err := p.Load()
 	require.NoError(t, err)
-
-	t.Log(values)
 
 	// After prefix stripping, "DB_HOST" is nested via "_"
 	nested, ok := values["db"].(map[string]any)

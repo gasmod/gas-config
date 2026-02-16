@@ -578,6 +578,7 @@ func setValue(dst reflect.Value, v any) error {
 		// try assignable
 		if srcVal.Type().AssignableTo(dst.Type()) {
 			dst.Set(srcVal)
+
 			return nil
 		}
 
