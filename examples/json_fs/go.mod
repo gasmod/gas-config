@@ -1,3 +1,3 @@
-module github.com/ahmedkamalio/gcfg/examples/json_fs
+module github.com/gasmod/gas-config/examples/json_fs
 
 go 1.24

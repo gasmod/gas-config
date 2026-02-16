@@ -3,7 +3,7 @@ package maps_test
 import (
 	"testing"
 
-	"github.com/ahmedkamalio/gcfg/internal/maps"
+	"github.com/gasmod/gas-config/internal/maps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,11 +11,11 @@ func TestFindNestedMap(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
 		m         map[string]any
+		expected  map[string]any
+		name      string
 		pathParts []string
 		create    bool
-		expected  map[string]any
 	}{
 		{
 			name:      "empty path and map without create",

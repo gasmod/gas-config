@@ -1,9 +1,9 @@
-package gcfg_test
+package config_test
 
 import (
 	"testing"
 
-	"github.com/ahmedkamalio/gcfg"
+	config "github.com/gasmod/gas-config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -11,7 +11,7 @@ import (
 func TestEnvProvider_DefaultOptions(t *testing.T) {
 	t.Setenv("TEST_KEY", "test_value")
 
-	p := gcfg.NewEnvProvider()
+	p := config.NewEnvProvider()
 
 	values, err := p.Load()
 	require.NoError(t, err)
@@ -25,8 +25,8 @@ func TestEnvProvider_WithEnvPrefix(t *testing.T) {
 	t.Setenv("TEST_KEY", "unaccessible_value")
 	t.Setenv("MYAPP_TEST_KEY", "test_value")
 
-	p := gcfg.NewEnvProvider(
-		gcfg.WithEnvPrefix("MYAPP_"), // load only prefixed variables
+	p := config.NewEnvProvider(
+		config.WithEnvPrefix("MYAPP_"), // load only prefixed variables
 	)
 
 	values, err := p.Load()
@@ -37,8 +37,8 @@ func TestEnvProvider_WithEnvPrefix(t *testing.T) {
 func TestEnvProvider_WithEnvSeparator(t *testing.T) {
 	t.Setenv("TEST__KEY", "test_value")
 
-	p := gcfg.NewEnvProvider(
-		gcfg.WithEnvSeparator("__"),
+	p := config.NewEnvProvider(
+		config.WithEnvSeparator("__"),
 	)
 
 	values, err := p.Load()
@@ -50,7 +50,7 @@ func TestEnvProvider_WithEnvSeparator(t *testing.T) {
 func TestEnvProvider_StandardNameDiscovery(t *testing.T) {
 	t.Setenv("DB_HOST", "localhost")
 
-	p := gcfg.NewEnvProvider()
+	p := config.NewEnvProvider()
 
 	values, err := p.Load()
 	require.NoError(t, err)
@@ -70,8 +70,8 @@ func TestEnvProvider_StandardNameDiscovery(t *testing.T) {
 func TestEnvProvider_StandardNameDiscoveryWithPrefix(t *testing.T) {
 	t.Setenv("MYAPP_DB_HOST", "localhost")
 
-	p := gcfg.NewEnvProvider(
-		gcfg.WithEnvPrefix("MYAPP_"),
+	p := config.NewEnvProvider(
+		config.WithEnvPrefix("MYAPP_"),
 	)
 
 	values, err := p.Load()
@@ -92,8 +92,8 @@ func TestEnvProvider_StandardNameDiscoveryWithPrefix(t *testing.T) {
 func TestEnvProvider_WithEnvNormalizeVarNames(t *testing.T) {
 	t.Setenv("TEST_KEY", "test_value")
 
-	p := gcfg.NewEnvProvider(
-		gcfg.WithEnvNormalizeVarNames(false),
+	p := config.NewEnvProvider(
+		config.WithEnvNormalizeVarNames(false),
 	)
 
 	values, err := p.Load()

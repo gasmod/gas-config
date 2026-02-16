@@ -35,8 +35,8 @@ func ParseVariables(vars map[string]string, pre, sep string, normalizeKey bool) 
 		normalizedKey := key
 
 		if pre != "" {
-			if strings.HasPrefix(key, pre) {
-				normalizedKey = strings.TrimPrefix(key, pre)
+			if after, ok := strings.CutPrefix(key, pre); ok {
+				normalizedKey = after
 			} else {
 				continue // Skip if doesn't match prefix
 			}

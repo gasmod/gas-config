@@ -1,11 +1,11 @@
-package gcfg_test
+package config_test
 
 import (
 	"os"
 	"testing"
 	"testing/fstest"
 
-	"github.com/ahmedkamalio/gcfg"
+	config "github.com/gasmod/gas-config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ import (
 func TestDotEnvProvider_DefaultOptions(t *testing.T) {
 	t.Parallel()
 
-	p := gcfg.NewDotEnvProvider()
+	p := config.NewDotEnvProvider()
 	_, err := p.Load()
 	require.Error(t, err)
 }
@@ -21,8 +21,8 @@ func TestDotEnvProvider_DefaultOptions(t *testing.T) {
 func TestDotEnvProvider_WithDotEnvFile_FileNotFound(t *testing.T) {
 	t.Parallel()
 
-	p := gcfg.NewDotEnvProvider(
-		gcfg.WithDotEnvFilePath(".env.non-existing"),
+	p := config.NewDotEnvProvider(
+		config.WithDotEnvFilePath(".env.non-existing"),
 	)
 	_, err := p.Load()
 	require.Error(t, err)
@@ -39,9 +39,9 @@ func TestDotEnvProvider_WithDotEnvFile(t *testing.T) {
 		},
 	}
 
-	p := gcfg.NewDotEnvProvider(
-		gcfg.WithDotEnvFilePath(".env"),
-		gcfg.WithDotEnvFileFS(&fsys),
+	p := config.NewDotEnvProvider(
+		config.WithDotEnvFilePath(".env"),
+		config.WithDotEnvFileFS(&fsys),
 	)
 
 	values, err := p.Load()
@@ -60,10 +60,10 @@ func TestDotEnvProvider_WithEnvSeparator(t *testing.T) {
 		},
 	}
 
-	p := gcfg.NewDotEnvProvider(
-		gcfg.WithDotEnvFilePath(".env"),
-		gcfg.WithDotEnvFileFS(&fsys),
-		gcfg.WithDotEnvSeparator("__"),
+	p := config.NewDotEnvProvider(
+		config.WithDotEnvFilePath(".env"),
+		config.WithDotEnvFileFS(&fsys),
+		config.WithDotEnvSeparator("__"),
 	)
 
 	values, err := p.Load()
@@ -83,10 +83,10 @@ func TestDotEnvProvider_WithEnvNormalizeVarNames(t *testing.T) {
 		},
 	}
 
-	p := gcfg.NewDotEnvProvider(
-		gcfg.WithDotEnvFilePath(".env"),
-		gcfg.WithDotEnvFileFS(&fsys),
-		gcfg.WithDotEnvNormalizeVarNames(false), // keep original variable names
+	p := config.NewDotEnvProvider(
+		config.WithDotEnvFilePath(".env"),
+		config.WithDotEnvFileFS(&fsys),
+		config.WithDotEnvNormalizeVarNames(false), // keep original variable names
 	)
 
 	values, err := p.Load()
@@ -107,9 +107,9 @@ func TestDotEnvProvider_Syntax(t *testing.T) {
 		},
 	}
 
-	p := gcfg.NewDotEnvProvider(
-		gcfg.WithDotEnvFilePath(".env"),
-		gcfg.WithDotEnvFileFS(&fsys),
+	p := config.NewDotEnvProvider(
+		config.WithDotEnvFilePath(".env"),
+		config.WithDotEnvFileFS(&fsys),
 	)
 
 	values, err := p.Load()
@@ -121,9 +121,9 @@ func TestDotEnvProvider_Syntax(t *testing.T) {
 func TestDotEnvProvider_WithDotEnvFile_FileNotFoundNoPanic(t *testing.T) {
 	t.Parallel()
 
-	p := gcfg.NewDotEnvProvider(
-		gcfg.WithDotEnvFilePath(".env.non-existing"),
-		gcfg.WithDotEnvFileNotFoundPanic(false),
+	p := config.NewDotEnvProvider(
+		config.WithDotEnvFilePath(".env.non-existing"),
+		config.WithDotEnvFileNotFoundPanic(false),
 	)
 	_, err := p.Load()
 	require.NoError(t, err)
@@ -138,9 +138,9 @@ func TestDotEnvProvider_AppendToOSEnv(t *testing.T) {
 		},
 	}
 
-	p := gcfg.NewDotEnvProvider(
-		gcfg.WithDotEnvFilePath(".env"),
-		gcfg.WithDotEnvFileFS(&fsys),
+	p := config.NewDotEnvProvider(
+		config.WithDotEnvFilePath(".env"),
+		config.WithDotEnvFileFS(&fsys),
 	)
 
 	values, err := p.Load()
@@ -158,10 +158,10 @@ func TestDotEnvProvider_NoAppendToOSEnv(t *testing.T) {
 		},
 	}
 
-	p := gcfg.NewDotEnvProvider(
-		gcfg.WithDotEnvFilePath(".env"),
-		gcfg.WithDotEnvFileFS(&fsys),
-		gcfg.WithDotEnvFileAppendToOSEnv(false),
+	p := config.NewDotEnvProvider(
+		config.WithDotEnvFilePath(".env"),
+		config.WithDotEnvFileFS(&fsys),
+		config.WithDotEnvFileAppendToOSEnv(false),
 	)
 
 	values, err := p.Load()

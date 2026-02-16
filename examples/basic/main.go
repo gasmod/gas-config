@@ -1,55 +1,58 @@
-// Example usage of the gcfg package
+// Example usage of the config package
 package main
 
 import (
 	"fmt"
 	"os"
 
-	"github.com/ahmedkamalio/gcfg"
+	config "github.com/gasmod/gas-config"
 )
 
-type AppConfig struct {
+type Config struct {
+	Server struct {
+		Host string
+		Port int
+	}
 	Database struct {
 		Host     string
 		Port     int
 		User     string
 		Password string
 	}
-	Server struct {
-		Host string
-		Port int
-	}
 	Logging struct {
 		Level string
 	}
 }
 
-func initEnvVars() {
-	_ = os.Setenv("DATABASE__HOST", "localhost")
-	_ = os.Setenv("DATABASE__PORT", "5432")
-	_ = os.Setenv("DATABASE__USER", "admin")
-	_ = os.Setenv("DATABASE__PASSWORD", "admin")
-	_ = os.Setenv("SERVER__HOST", "0.0.0.0")
-	_ = os.Setenv("SERVER__PORT", "8080")
-	_ = os.Setenv("LOGGING__LEVEL", "debug")
-}
+const (
+	serverDefaultHost       = "0.0.0.0"
+	serverDefaultPort       = 8080
+	databaseDefaultHost     = "localhost"
+	databaseDefaultPort     = 5432
+	databaseDefaultUser     = "admin"
+	databaseDefaultPassword = "admin"
+	loggingDefaultLevel     = "debug"
+)
 
 func main() {
 	initEnvVars()
 
 	// initialize config instance
-	config := gcfg.New() // by default, it uses the env provider
+	cfg := config.New() // by default, it uses the env provider
+	defer cfg.Close()
 
 	// Load configuration
-	if err := config.Load(); err != nil {
+	if err := cfg.Init(); err != nil {
 		panic(err)
 	}
 
 	// Bind to user-defined type
-	var appCfg AppConfig
-	if err := config.Bind(&appCfg); err != nil {
+	var appCfg Config
+	if err := cfg.Bind(&appCfg); err != nil {
 		panic(err)
 	}
+
+	validateConfig(&appCfg)
 
 	// Use the config
 	fmt.Printf("Server: %s:%d\n", appCfg.Server.Host, appCfg.Server.Port)
@@ -61,4 +64,38 @@ func main() {
 		appCfg.Database.Port,
 	)
 	fmt.Printf("Log Level: %s\n", appCfg.Logging.Level)
+}
+
+func initEnvVars() {
+	_ = os.Setenv("SERVER_HOST", serverDefaultHost)
+	_ = os.Setenv("SERVER_PORT", fmt.Sprintf("%d", serverDefaultPort))
+	_ = os.Setenv("DATABASE_HOST", databaseDefaultHost)
+	_ = os.Setenv("DATABASE_PORT", fmt.Sprintf("%d", databaseDefaultPort))
+	_ = os.Setenv("DATABASE_USER", databaseDefaultUser)
+	_ = os.Setenv("DATABASE_PASSWORD", databaseDefaultPassword)
+	_ = os.Setenv("LOGGING_LEVEL", loggingDefaultLevel)
+}
+
+func validateConfig(cfg *Config) {
+	if cfg.Server.Host != serverDefaultHost {
+		panic("invalid server host")
+	}
+	if cfg.Server.Port != serverDefaultPort {
+		panic("invalid server port")
+	}
+	if cfg.Database.Host != databaseDefaultHost {
+		panic("invalid database host")
+	}
+	if cfg.Database.Port != databaseDefaultPort {
+		panic("invalid database port")
+	}
+	if cfg.Database.User != databaseDefaultUser {
+		panic("invalid database user")
+	}
+	if cfg.Database.Password != databaseDefaultPassword {
+		panic("invalid database password")
+	}
+	if cfg.Logging.Level != loggingDefaultLevel {
+		panic("invalid logging level")
+	}
 }

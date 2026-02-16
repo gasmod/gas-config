@@ -1,10 +1,10 @@
-// Example usage of the gcfg package
+// Example usage of the config package
 package main
 
 import (
 	"fmt"
 
-	"github.com/ahmedkamalio/gcfg"
+	config "github.com/gasmod/gas-config"
 )
 
 type AppConfig struct {
@@ -25,20 +25,21 @@ type AppConfig struct {
 
 func main() {
 	// initialize config instance
-	config := gcfg.New(
-		gcfg.NewJSONProvider(
-			gcfg.WithJSONFilePath("config.json"),
-		),
+	cfg := config.New(
+		config.WithProvider(config.NewJSONProvider(
+			config.WithJSONFilePath("config.json"),
+		)),
 	)
+	defer cfg.Close()
 
 	// Load configuration
-	if err := config.Load(); err != nil {
+	if err := cfg.Init(); err != nil {
 		panic(err)
 	}
 
 	// Bind to user-defined type
 	var appCfg AppConfig
-	if err := config.Bind(&appCfg); err != nil {
+	if err := cfg.Bind(&appCfg); err != nil {
 		panic(err)
 	}
 

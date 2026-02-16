@@ -1,10 +1,10 @@
-package gcfg
+package config
 
 import (
 	"os"
 	"strings"
 
-	"github.com/ahmedkamalio/gcfg/internal/env"
+	"github.com/gasmod/gas-config/internal/env"
 )
 
 const (

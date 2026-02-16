@@ -1,4 +1,4 @@
-package gcfg
+package config
 
 // Provider defines the interface for configuration providers.
 // Implement this interface to create custom providers like env, json, yml, etc.

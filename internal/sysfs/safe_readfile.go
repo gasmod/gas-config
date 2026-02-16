@@ -2,6 +2,7 @@ package sysfs
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -24,7 +25,7 @@ func SafeOpen(filePath string) (*os.File, error) {
 	// Get current working directory as baseDir
 	baseDir, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get working directory: %w", err)
 	}
 
 	// Clean the input path
@@ -33,7 +34,7 @@ func SafeOpen(filePath string) (*os.File, error) {
 	// Make it absolute
 	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("resolve absolute path: %w", err)
 	}
 
 	// Ensure the absolute path is within the baseDir
@@ -44,7 +45,7 @@ func SafeOpen(filePath string) (*os.File, error) {
 	// Ensure file is not a symlink
 	info, err := os.Lstat(absPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("stat file: %w", err)
 	}
 
 	if info.Mode()&fs.ModeSymlink != 0 {
@@ -56,6 +57,10 @@ func SafeOpen(filePath string) (*os.File, error) {
 		return nil, ErrConfigFileTooLarge
 	}
 
-	//nolint:gosec
-	return os.Open(absPath)
+	f, err := os.Open(absPath) //nolint:gosec // path is validated above
+	if err != nil {
+		return nil, fmt.Errorf("open file: %w", err)
+	}
+
+	return f, nil
 }

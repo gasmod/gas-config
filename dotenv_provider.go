@@ -1,4 +1,4 @@
-package gcfg
+package config
 
 import (
 	"errors"
@@ -6,9 +6,9 @@ import (
 	"io/fs"
 	"os"
 
-	"github.com/ahmedkamalio/gcfg/internal/dotenv"
-	"github.com/ahmedkamalio/gcfg/internal/env"
-	"github.com/ahmedkamalio/gcfg/internal/providers"
+	"github.com/gasmod/gas-config/internal/dotenv"
+	"github.com/gasmod/gas-config/internal/env"
+	"github.com/gasmod/gas-config/internal/providers"
 )
 
 var (
@@ -79,9 +79,9 @@ func WithDotEnvNormalizeVarNames(normalized bool) DotEnvOption {
 // WithDotEnvFileFS sets the fs of which to read the .env file from.
 //
 // Default: sysfs.SysFS.
-func WithDotEnvFileFS(fs fs.FS) DotEnvOption {
+func WithDotEnvFileFS(fileFS fs.FS) DotEnvOption {
 	return func(p *DotEnvProvider) {
-		p.SetFS(fs)
+		p.SetFS(fileFS)
 	}
 }
 
@@ -130,7 +130,7 @@ func (p *DotEnvProvider) Load() (map[string]any, error) {
 
 	file, err := p.ReadFile(p.filePath)
 	if err != nil {
-		if os.IsNotExist(err) && !p.panicFileNotFound {
+		if errors.Is(err, os.ErrNotExist) && !p.panicFileNotFound {
 			// Don't panic if file doesn't exist.
 			return make(map[string]any), nil
 		}

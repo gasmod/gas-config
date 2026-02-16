@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ahmedkamalio/gcfg/internal/maps"
+	"github.com/gasmod/gas-config/internal/maps"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,9 +18,8 @@ func TestBind_EmbeddedStruct(t *testing.T) {
 	}
 
 	type Parent struct {
-		Embedded
-
 		Name string `json:"name"`
+		Embedded
 	}
 
 	src := map[string]any{
@@ -107,9 +106,8 @@ func TestUnbind_EmbeddedStruct(t *testing.T) {
 	}
 
 	type Parent struct {
-		Embedded
-
 		Name string `json:"name"`
+		Embedded
 	}
 
 	src := Parent{

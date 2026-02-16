@@ -3,7 +3,7 @@ package maps_test
 import (
 	"testing"
 
-	"github.com/ahmedkamalio/gcfg/internal/maps"
+	"github.com/gasmod/gas-config/internal/maps"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,10 +11,10 @@ func TestMerge(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
 		dst      map[string]any
 		src      map[string]any
 		expected map[string]any
+		name     string
 	}{
 		{
 			name: "simple merge with override",
@@ -124,10 +124,10 @@ func TestMergeWithoutOverride(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
 		dst      map[string]any
 		src      map[string]any
 		expected map[string]any
+		name     string
 	}{
 		{
 			name: "simple merge without override",

@@ -1,6 +1,6 @@
-// Package gcfg provides a flexible configuration management system
+// Package config provides a flexible configuration management system
 // that supports reading from multiple providers and binding to user-defined types.
-package gcfg
+package config
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ahmedkamalio/gcfg/internal/maps"
-	"github.com/ahmedkamalio/gcfg/internal/reflection"
+	"github.com/gasmod/gas-config/internal/maps"
+	"github.com/gasmod/gas-config/internal/reflection"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -30,46 +30,11 @@ var (
 
 // Config represents the configuration loaded from various providers.
 type Config struct {
-	providers []Provider
-
+	validate   *validator.Validate
+	values     map[string]any
+	providers  []Provider
 	extensions []Extension
-
-	values map[string]any
-	mu     sync.RWMutex
-
-	validate *validator.Validate
-}
-
-// New creates a new config instance with given providers.
-func New(providers ...Provider) *Config {
-	pvd := append([]Provider{}, providers...)
-
-	hasEnvProvider := false
-
-	for _, p := range providers {
-		if p.Name() == envProviderName {
-			hasEnvProvider = true
-
-			break
-		}
-	}
-
-	if !hasEnvProvider {
-		pvd = append([]Provider{NewEnvProvider()}, pvd...)
-	}
-
-	return &Config{
-		values:    make(map[string]any),
-		providers: pvd,
-		validate:  validator.New(),
-	}
-}
-
-// WithExtensions appends one or more extensions to the configuration and returns the updated Config instance.
-func (c *Config) WithExtensions(extensions ...Extension) *Config {
-	c.extensions = append(c.extensions, extensions...)
-
-	return c
+	mu         sync.RWMutex
 }
 
 // SetDefault sets a default value for the specified key in the configuration.
@@ -117,7 +82,7 @@ func (c *Config) SetDefaults(values any) error {
 
 	tempValues := make(map[string]any)
 	if err := maps.Unbind(values, tempValues); err != nil {
-		return err
+		return fmt.Errorf("unbind defaults: %w", err)
 	}
 
 	maps.LowercaseKeys(tempValues)
@@ -144,17 +109,17 @@ func (c *Config) Set(key string, value any) {
 	}
 }
 
-// Load loads configuration from all registered providers and applies pre/post-load hooks
+// load loads configuration from all registered providers and applies pre/post-load hooks
 // defined by extensions.
 //
 // Returns an error if any provider or extension hook fails during the loading process.
-func (c *Config) Load() error {
-	return c.LoadWithContext(context.Background())
+func (c *Config) load() error {
+	return c.loadWithContext(context.Background())
 }
 
-// LoadWithContext loads configuration with the provided context, executing pre-load and post-load
+// loadWithContext loads configuration with the provided context, executing pre-load and post-load
 // hooks for extensions.
-func (c *Config) LoadWithContext(ctx context.Context) error {
+func (c *Config) loadWithContext(ctx context.Context) error {
 	for _, ext := range c.extensions {
 		if err := ext.PreLoad(ctx, c); err != nil {
 			return fmt.Errorf("%w %s: %w", ErrExtensionPreLoadHookFailed, ext.Name(), err)
@@ -200,12 +165,12 @@ func (c *Config) Bind(dest any, options ...BindOption) error {
 	c.mu.RUnlock()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("bind config: %w", err)
 	}
 
 	if opts.validate {
 		if vErr := c.validate.Struct(dest); vErr != nil {
-			return vErr
+			return fmt.Errorf("validate config: %w", vErr)
 		}
 	}
 

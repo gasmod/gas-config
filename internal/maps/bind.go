@@ -193,39 +193,13 @@ func setMapFromStructRecursive(rv reflect.Value, m map[string]any) error {
 
 		fv := rv.Field(i)
 
-		// Handle embedded structs
-		if sf.Anonymous {
-			fieldType := sf.Type
-			// Handle pointer to embedded struct
-			if fieldType.Kind() == reflect.Ptr {
-				if fv.IsNil() {
-					continue // skip nil embedded pointer
-				}
-
-				fv = fv.Elem()
-				fieldType = fieldType.Elem()
-			}
-
-			if fieldType.Kind() == reflect.Struct {
-				// Recursively flatten embedded struct fields
-				err := setMapFromStructRecursive(fv, m)
-				if err != nil {
-					return err
-				}
-
-				continue
-			}
+		if handled, err := handleEmbeddedField(sf, fv, m); err != nil {
+			return err
+		} else if handled {
+			continue
 		}
 
-		key := sf.Name
-
-		jsonTag := sf.Tag.Get("json")
-		if jsonTag != "" {
-			parts := strings.Split(jsonTag, ",")
-			if parts[0] != "" && parts[0] != "-" {
-				key = parts[0]
-			}
-		}
+		key := fieldKey(sf)
 
 		val, err := getAnyFromValue(fv)
 		if err != nil {
@@ -238,15 +212,54 @@ func setMapFromStructRecursive(rv reflect.Value, m map[string]any) error {
 	return nil
 }
 
+func handleEmbeddedField(sf reflect.StructField, fv reflect.Value, m map[string]any) (bool, error) {
+	if !sf.Anonymous {
+		return false, nil
+	}
+
+	fieldType := sf.Type
+	if fieldType.Kind() == reflect.Ptr {
+		if fv.IsNil() {
+			return true, nil
+		}
+
+		fv = fv.Elem()
+		fieldType = fieldType.Elem()
+	}
+
+	if fieldType.Kind() != reflect.Struct {
+		return false, nil
+	}
+
+	if err := setMapFromStructRecursive(fv, m); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func fieldKey(sf reflect.StructField) string {
+	key := sf.Name
+
+	jsonTag := sf.Tag.Get("json")
+	if jsonTag != "" {
+		parts := strings.Split(jsonTag, ",")
+		if parts[0] != "" && parts[0] != "-" {
+			key = parts[0]
+		}
+	}
+
+	return key
+}
+
+//nolint:gocyclo,cyclop // type switch with many cases is inherently complex
 func getAnyFromValue(rv reflect.Value) (any, error) {
 	if !rv.IsValid() {
-		//nolint:nilnil
 		return nil, nil
 	}
 
 	if rv.Kind() == reflect.Ptr {
 		if rv.IsNil() {
-			//nolint:nilnil
 			return nil, nil
 		}
 
@@ -302,7 +315,6 @@ func getAnyFromValue(rv reflect.Value) (any, error) {
 		return arr, nil
 	case reflect.Interface:
 		if rv.IsNil() {
-			//nolint:nilnil
 			return nil, nil
 		}
 
@@ -314,9 +326,9 @@ func getAnyFromValue(rv reflect.Value) (any, error) {
 
 type fieldInfo struct {
 	Name  string
-	Index int
 	Tag   string
-	Path  []int // Path to the field through embedded structs
+	Path  []int
+	Index int
 }
 
 // buildStructFieldMap creates a lookup for "keys" to fields using json tag then case-insensitive name.
@@ -336,29 +348,27 @@ func buildStructFieldMapRecursive(t reflect.Type, indexPath []int, out map[strin
 			continue
 		}
 
-		//nolint:gocritic
-		currentPath := append(indexPath, i)
+		currentPath := make([]int, len(indexPath)+1)
+		copy(currentPath, indexPath)
+		currentPath[len(indexPath)] = i
 
 		// Handle embedded structs
-		if sf.Anonymous {
+		if sf.Anonymous && isEmbeddedStruct(sf.Type) {
 			fieldType := sf.Type
-			// Handle pointer to embedded struct
 			if fieldType.Kind() == reflect.Ptr {
 				fieldType = fieldType.Elem()
 			}
 
-			if fieldType.Kind() == reflect.Struct {
-				// Recursively process embedded struct fields
-				buildStructFieldMapRecursive(fieldType, currentPath, out)
+			buildStructFieldMapRecursive(fieldType, currentPath, out)
 
-				continue
-			}
+			continue
 		}
 
 		jsonTag := sf.Tag.Get("json")
 		name := sf.Name
 
 		key := strings.ToLower(name)
+
 		if jsonTag != "" {
 			parts := strings.Split(jsonTag, ",")
 			if parts[0] != "" && parts[0] != "-" {
@@ -382,6 +392,14 @@ func buildStructFieldMapRecursive(t reflect.Type, indexPath []int, out map[strin
 	}
 }
 
+func isEmbeddedStruct(t reflect.Type) bool {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t.Kind() == reflect.Struct
+}
+
 func setValue(dst reflect.Value, v any) error {
 	// handle pointer destination by allocating if nil
 	for dst.Kind() == reflect.Ptr {
@@ -397,7 +415,6 @@ func setValue(dst reflect.Value, v any) error {
 	}
 
 	if v == nil {
-		// zero value
 		dst.Set(reflect.Zero(dst.Type()))
 
 		return nil
@@ -407,201 +424,206 @@ func setValue(dst reflect.Value, v any) error {
 
 	switch dst.Kind() {
 	case reflect.Struct:
-		// if src is map[string]any -> recurse
-		if m, ok := v.(map[string]any); ok {
-			// create an addressable struct value to pass into Bind-like logic
-			// we'll iterate fields manually instead of calling Bind to avoid type checks
-			t := dst.Type()
-
-			fieldMap := buildStructFieldMap(t)
-			for key, val := range m {
-				// try tag key then lowercased name
-				if fi, ok := fieldMap[key]; ok {
-					fv := getFieldByPath(dst, fi.Path)
-					if !fv.CanSet() {
-						continue
-					}
-
-					err := setValue(fv, val)
-					if err != nil {
-						return fmt.Errorf("struct field %s: %w", fi.Name, err)
-					}
-				} else if fi, ok := fieldMap[strings.ToLower(key)]; ok {
-					fv := getFieldByPath(dst, fi.Path)
-					if !fv.CanSet() {
-						continue
-					}
-
-					err := setValue(fv, val)
-					if err != nil {
-						return fmt.Errorf("struct field %s: %w", fi.Name, err)
-					}
-				}
-			}
-
-			return nil
-		}
-		// if src is a struct assignable
-		if srcVal.Type().AssignableTo(dst.Type()) {
-			dst.Set(srcVal)
-
-			return nil
-		}
-		// else try to convert if possible
-		if srcVal.Type().ConvertibleTo(dst.Type()) {
-			dst.Set(srcVal.Convert(dst.Type()))
-
-			return nil
-		}
-
-		return fmt.Errorf("%w %T", ErrCannotSetStructFrom, v)
-
+		return setStructValue(dst, v, srcVal)
 	case reflect.Map:
-		// src must be map[string]any (or map[<key>]<value> convertible)
-		if m, ok := v.(map[string]any); ok {
-			newMap := reflect.MakeMapWithSize(dst.Type(), len(m))
-			keyType := dst.Type().Key()
-
-			elemType := dst.Type().Elem()
-			for mk, mv := range m {
-				kv := reflect.New(keyType).Elem()
-				// set key (try convert string to key)
-				if err := setSimpleValueFromString(kv, mk); err != nil {
-					// try direct string assign if key is string
-					if keyType.Kind() == reflect.String {
-						kv.SetString(mk)
-					} else {
-						return fmt.Errorf("%w: %w", ErrMapKeyConversion, err)
-					}
-				}
-
-				ev := reflect.New(elemType).Elem()
-				if err := setValue(ev, mv); err != nil {
-					return fmt.Errorf("map value for key %s: %w", mk, err)
-				}
-
-				newMap.SetMapIndex(kv, ev)
-			}
-
-			dst.Set(newMap)
-
-			return nil
-		}
-		// if src is a map with reflected type that can be converted
-		if srcVal.Type().AssignableTo(dst.Type()) {
-			dst.Set(srcVal)
-
-			return nil
-		}
-
-		return fmt.Errorf("%w %T", ErrCannotSetMapFrom, v)
-
+		return setMapValue(dst, v, srcVal)
 	case reflect.Slice:
-		// expect src to be []any or something convertible
-		if arr, ok := v.([]any); ok {
-			slice := reflect.MakeSlice(dst.Type(), len(arr), len(arr))
-			for i := range arr {
-				err := setValue(slice.Index(i), arr[i])
-				if err != nil {
-					return fmt.Errorf("slice index %d: %w", i, err)
-				}
-			}
-
-			dst.Set(slice)
-
-			return nil
-		}
-
-		// if src is string, expect comma-separated values
-		if str, ok := v.(string); ok {
-			parts := strings.Split(str, ",")
-
-			if dst.Len() < len(parts) {
-				dst.Grow(len(parts))
-				dst.SetLen(len(parts))
-			}
-
-			for i, part := range parts {
-				if err := setValue(dst.Index(i), strings.TrimSpace(part)); err != nil {
-					return fmt.Errorf("array index %d: %w", i, err)
-				}
-			}
-
-			return nil
-		}
-
-		// if src is slice/array assignable/convertible
-		if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
-			// try direct conversion if types align
-			if srcVal.Type().AssignableTo(dst.Type()) {
-				dst.Set(srcVal)
-
-				return nil
-			}
-			// fallback: iterate elements
-			l := srcVal.Len()
-
-			slice := reflect.MakeSlice(dst.Type(), l, l)
-			for i := range l {
-				elem := srcVal.Index(i).Interface()
-
-				err := setValue(slice.Index(i), elem)
-				if err != nil {
-					return fmt.Errorf("slice element %d: %w", i, err)
-				}
-			}
-
-			dst.Set(slice)
-
-			return nil
-		}
-
-		return fmt.Errorf("%w %T", ErrCannotSetSliceFrom, v)
-
+		return setSliceValue(dst, v, srcVal)
 	case reflect.Array:
-		// handle arrays similarly but must match length
-		if arr, ok := v.([]any); ok {
-			if dst.Len() < len(arr) {
-				dst.Grow(len(arr))
-				dst.SetLen(len(arr))
-			}
-
-			for i := range dst.Len() {
-				if err := setValue(dst.Index(i), arr[i]); err != nil {
-					return fmt.Errorf("array index %d: %w", i, err)
-				}
-			}
-
-			return nil
-		}
-
-		// try assignable
-		if srcVal.Type().AssignableTo(dst.Type()) {
-			dst.Set(srcVal)
-
-			return nil
-		}
-
-		return fmt.Errorf("%w %T", ErrCannotSetArrayFrom, v)
-
+		return setArrayValue(dst, v, srcVal)
 	case reflect.Interface:
-		// put raw value into interface if assignable
-		if srcVal.Type().AssignableTo(dst.Type()) || dst.Type().NumMethod() == 0 {
-			dst.Set(srcVal)
-
-			return nil
-		}
-		// create a value of the interface's concrete type if possible
 		dst.Set(srcVal)
 
 		return nil
-
 	default:
-		// basic kinds: Bool, Int*, Uint*, Float*, String
 		return setBasicKind(dst, v)
 	}
 }
 
+func setStructValue(dst reflect.Value, v any, srcVal reflect.Value) error {
+	m, ok := v.(map[string]any)
+	if ok {
+		return setStructFromMap(dst, m)
+	}
+
+	if srcVal.Type().AssignableTo(dst.Type()) {
+		dst.Set(srcVal)
+
+		return nil
+	}
+
+	if srcVal.Type().ConvertibleTo(dst.Type()) {
+		dst.Set(srcVal.Convert(dst.Type()))
+
+		return nil
+	}
+
+	return fmt.Errorf("%w %T", ErrCannotSetStructFrom, v)
+}
+
+func setStructFromMap(dst reflect.Value, m map[string]any) error {
+	fieldMap := buildStructFieldMap(dst.Type())
+	for key, val := range m {
+		fi, ok := fieldMap[key]
+		if !ok {
+			fi, ok = fieldMap[strings.ToLower(key)]
+		}
+
+		if !ok {
+			continue
+		}
+
+		fv := getFieldByPath(dst, fi.Path)
+		if !fv.CanSet() {
+			continue
+		}
+
+		if err := setValue(fv, val); err != nil {
+			return fmt.Errorf("struct field %s: %w", fi.Name, err)
+		}
+	}
+
+	return nil
+}
+
+func setMapValue(dst reflect.Value, v any, srcVal reflect.Value) error {
+	m, ok := v.(map[string]any)
+	if ok {
+		return setMapFromStringMap(dst, m)
+	}
+
+	if srcVal.Type().AssignableTo(dst.Type()) {
+		dst.Set(srcVal)
+
+		return nil
+	}
+
+	return fmt.Errorf("%w %T", ErrCannotSetMapFrom, v)
+}
+
+func setMapFromStringMap(dst reflect.Value, m map[string]any) error {
+	newMap := reflect.MakeMapWithSize(dst.Type(), len(m))
+	keyType := dst.Type().Key()
+	elemType := dst.Type().Elem()
+
+	for mk, mv := range m {
+		kv := reflect.New(keyType).Elem()
+
+		if err := setSimpleValueFromString(kv, mk); err != nil {
+			if keyType.Kind() == reflect.String {
+				kv.SetString(mk)
+			} else {
+				return fmt.Errorf("%w: %w", ErrMapKeyConversion, err)
+			}
+		}
+
+		ev := reflect.New(elemType).Elem()
+		if err := setValue(ev, mv); err != nil {
+			return fmt.Errorf("map value for key %s: %w", mk, err)
+		}
+
+		newMap.SetMapIndex(kv, ev)
+	}
+
+	dst.Set(newMap)
+
+	return nil
+}
+
+func setSliceValue(dst reflect.Value, v any, srcVal reflect.Value) error {
+	if arr, ok := v.([]any); ok {
+		return setSliceFromAnySlice(dst, arr)
+	}
+
+	if str, ok := v.(string); ok {
+		return setSliceFromCSV(dst, str)
+	}
+
+	if srcVal.Kind() == reflect.Slice || srcVal.Kind() == reflect.Array {
+		return setSliceFromReflect(dst, srcVal)
+	}
+
+	return fmt.Errorf("%w %T", ErrCannotSetSliceFrom, v)
+}
+
+func setSliceFromAnySlice(dst reflect.Value, arr []any) error {
+	slice := reflect.MakeSlice(dst.Type(), len(arr), len(arr))
+	for i := range arr {
+		if err := setValue(slice.Index(i), arr[i]); err != nil {
+			return fmt.Errorf("slice index %d: %w", i, err)
+		}
+	}
+
+	dst.Set(slice)
+
+	return nil
+}
+
+func setSliceFromCSV(dst reflect.Value, str string) error {
+	parts := strings.Split(str, ",")
+
+	if dst.Len() < len(parts) {
+		dst.Grow(len(parts))
+		dst.SetLen(len(parts))
+	}
+
+	for i, part := range parts {
+		if err := setValue(dst.Index(i), strings.TrimSpace(part)); err != nil {
+			return fmt.Errorf("array index %d: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
+func setSliceFromReflect(dst, srcVal reflect.Value) error {
+	if srcVal.Type().AssignableTo(dst.Type()) {
+		dst.Set(srcVal)
+
+		return nil
+	}
+
+	l := srcVal.Len()
+	slice := reflect.MakeSlice(dst.Type(), l, l)
+
+	for i := range l {
+		elem := srcVal.Index(i).Interface()
+		if err := setValue(slice.Index(i), elem); err != nil {
+			return fmt.Errorf("slice element %d: %w", i, err)
+		}
+	}
+
+	dst.Set(slice)
+
+	return nil
+}
+
+func setArrayValue(dst reflect.Value, v any, srcVal reflect.Value) error {
+	if arr, ok := v.([]any); ok {
+		if dst.Len() < len(arr) {
+			dst.Grow(len(arr))
+			dst.SetLen(len(arr))
+		}
+
+		for i := range dst.Len() {
+			if err := setValue(dst.Index(i), arr[i]); err != nil {
+				return fmt.Errorf("array index %d: %w", i, err)
+			}
+		}
+
+		return nil
+	}
+
+	if srcVal.Type().AssignableTo(dst.Type()) {
+		dst.Set(srcVal)
+
+		return nil
+	}
+
+	return fmt.Errorf("%w %T", ErrCannotSetArrayFrom, v)
+}
+
+//nolint:cyclop // type switch with many cases is inherently complex
 func setBasicKind(dst reflect.Value, v any) error {
 	switch dst.Kind() {
 	case reflect.Bool:
@@ -684,7 +706,12 @@ func toBool(val any) (bool, error) {
 	case bool:
 		return typ, nil
 	case string:
-		return strconv.ParseBool(typ)
+		b, err := strconv.ParseBool(typ)
+		if err != nil {
+			return false, fmt.Errorf("parse bool %q: %w", typ, err)
+		}
+
+		return b, nil
 	case float64:
 		return typ != 0, nil
 	case float32:
@@ -710,6 +737,7 @@ func toString(val any) string {
 	}
 }
 
+//nolint:gocyclo,cyclop // type switch with many cases is inherently complex
 func toInt64(val any) (int64, error) {
 	switch typ := val.(type) {
 	case int:
@@ -745,7 +773,12 @@ func toInt64(val any) (int64, error) {
 	case float32:
 		return int64(typ), nil
 	case string:
-		return strconv.ParseInt(typ, 10, 64)
+		i, err := strconv.ParseInt(typ, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("parse int %q: %w", typ, err)
+		}
+
+		return i, nil
 	case time.Duration:
 		return int64(typ), nil
 	default:
@@ -762,7 +795,12 @@ func toDuration(value any) (time.Duration, error) {
 	case string:
 		switch typedValue[len(typedValue)-1:] {
 		case "s", "m", "h": // "s" captures "ns", "us", "µs", "ms", and "s"
-			return time.ParseDuration(typedValue)
+			d, err := time.ParseDuration(typedValue)
+			if err != nil {
+				return 0, fmt.Errorf("parse duration %q: %w", typedValue, err)
+			}
+
+			return d, nil
 		default:
 			i, err := strconv.ParseInt(typedValue, 10, 64)
 
@@ -773,6 +811,7 @@ func toDuration(value any) (time.Duration, error) {
 	}
 }
 
+//nolint:gocyclo,cyclop // type switch with many cases is inherently complex
 func toUint64(val any) (uint64, error) {
 	switch typ := val.(type) {
 	case uint:
@@ -822,12 +861,18 @@ func toUint64(val any) (uint64, error) {
 
 		return uint64(typ), nil
 	case string:
-		return strconv.ParseUint(typ, 10, 64)
+		u, err := strconv.ParseUint(typ, 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("parse uint %q: %w", typ, err)
+		}
+
+		return u, nil
 	default:
 		return 0, fmt.Errorf("%w %T", ErrCannotConvertToUint64, val)
 	}
 }
 
+//nolint:cyclop // type switch with many cases is inherently complex
 func toFloat64(val any) (float64, error) {
 	switch typ := val.(type) {
 	case float64:
@@ -855,7 +900,12 @@ func toFloat64(val any) (float64, error) {
 	case uint64:
 		return float64(typ), nil
 	case string:
-		return strconv.ParseFloat(typ, 64)
+		f, err := strconv.ParseFloat(typ, 64)
+		if err != nil {
+			return 0, fmt.Errorf("parse float %q: %w", typ, err)
+		}
+
+		return f, nil
 	default:
 		return 0, fmt.Errorf("%w %T", ErrCannotConvertToFloat64, val)
 	}
@@ -901,7 +951,7 @@ func setSimpleValueFromString(dst reflect.Value, str string) error {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		i, err := strconv.ParseInt(str, 10, dst.Type().Bits())
 		if err != nil {
-			return err
+			return fmt.Errorf("parse int key %q: %w", str, err)
 		}
 
 		dst.SetInt(i)
@@ -910,7 +960,7 @@ func setSimpleValueFromString(dst reflect.Value, str string) error {
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		u, err := strconv.ParseUint(str, 10, dst.Type().Bits())
 		if err != nil {
-			return err
+			return fmt.Errorf("parse uint key %q: %w", str, err)
 		}
 
 		dst.SetUint(u)
@@ -919,7 +969,7 @@ func setSimpleValueFromString(dst reflect.Value, str string) error {
 	case reflect.Bool:
 		b, err := strconv.ParseBool(str)
 		if err != nil {
-			return err
+			return fmt.Errorf("parse bool key %q: %w", str, err)
 		}
 
 		dst.SetBool(b)

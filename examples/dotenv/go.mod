@@ -1,3 +1,3 @@
-module github.com/ahmedkamalio/gcfg/examples/dotenv
+module github.com/gasmod/gas-config/examples/dotenv
 
 go 1.24

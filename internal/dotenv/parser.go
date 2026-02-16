@@ -8,6 +8,7 @@ package dotenv
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"strings"
 )
 
@@ -52,9 +53,8 @@ func Parse(data []byte) (map[string]string, error) {
 		env[k] = val
 	}
 
-	err := scanner.Err()
-	if err != nil {
-		return nil, err
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("scanning dotenv: %w", err)
 	}
 
 	return env, nil
@@ -94,7 +94,7 @@ loop:
 
 // parseSingleLine processes a single line when not in multiline mode and extracts key-value pair.
 // It returns key, value, whether it's a multiline start, and the quote character if multiline.
-func parseSingleLine(line string) (string, string, bool, rune) {
+func parseSingleLine(line string) (key, value string, isMultiline bool, quote rune) {
 	line = strings.TrimSpace(line)
 	line = removeInlineComment(line)
 
@@ -107,13 +107,13 @@ func parseSingleLine(line string) (string, string, bool, rune) {
 		return "", "", false, 0
 	}
 
-	key := strings.TrimSpace(parts[0])
-	value := strings.TrimSpace(parts[1])
+	key = strings.TrimSpace(parts[0])
+	value = strings.TrimSpace(parts[1])
 
 	// Check for multiline start
 	if (strings.HasPrefix(value, `"`) && !strings.HasSuffix(strings.TrimRight(value, " \t"), `"`)) ||
 		(strings.HasPrefix(value, `'`) && !strings.HasSuffix(strings.TrimRight(value, " \t"), `'`)) {
-		quote := rune(value[0])
+		quote = rune(value[0])
 
 		return key, strings.TrimPrefix(value, string(quote)), true, quote
 	}

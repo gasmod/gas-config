@@ -3,7 +3,7 @@ package env_test
 import (
 	"testing"
 
-	"github.com/ahmedkamalio/gcfg/internal/env"
+	"github.com/gasmod/gas-config/internal/env"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -11,12 +11,12 @@ func TestParseVariables_StandardNameDiscovery(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
 		vars         map[string]string
+		check        func(t *testing.T, data map[string]any)
+		name         string
 		pre          string
 		sep          string
 		normalizeKey bool
-		check        func(t *testing.T, data map[string]any)
 	}{
 		{
 			name:         "single underscore creates nested map",

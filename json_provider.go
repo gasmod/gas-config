@@ -1,4 +1,4 @@
-package gcfg
+package config
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 
-	"github.com/ahmedkamalio/gcfg/internal/providers"
+	"github.com/gasmod/gas-config/internal/providers"
 )
 
 var (
@@ -44,9 +44,9 @@ func WithJSONFilePath(filePath string) JSONOption {
 // WithJSONFileFS sets the fs of which to read the JSON file from.
 //
 // Default: sysfs.SysFS.
-func WithJSONFileFS(fs fs.FS) JSONOption {
+func WithJSONFileFS(fileFS fs.FS) JSONOption {
 	return func(p *JSONProvider) {
-		p.SetFS(fs)
+		p.SetFS(fileFS)
 	}
 }
 
