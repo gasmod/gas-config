@@ -154,14 +154,7 @@ linters:
       - third_party
       - testdata
 
-    max-issues-per-linter: 0
-    max-same-issues: 0
-
 output:
-  formats:
-    colored-line-number:
-      path: stdout
-  sort-results: true
   sort-order:
     - linter
     - severity
