@@ -8,9 +8,12 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/gasmod/gas-config/internal/maputils"
 	"github.com/gasmod/gas-config/internal/reflection"
+	"github.com/gasmod/gas-config/providers"
+
 	"github.com/go-playground/validator/v10"
 )
 
@@ -32,9 +35,10 @@ var (
 type Config struct {
 	validate   *validator.Validate
 	values     map[string]any
-	providers  []Provider
+	providers  []providers.Provider
 	extensions []Extension
 	mu         sync.RWMutex
+	closed     atomic.Bool
 }
 
 // SetDefault sets a default value for the specified key in the configuration.

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	config "github.com/gasmod/gas-config"
+	"github.com/gasmod/gas-config/providers"
 )
 
 type AppConfig struct {
@@ -39,8 +40,8 @@ func main() {
 
 	// initialize config instance
 	cfg := config.New(
-		config.WithProvider(config.NewEnvProvider(
-			config.WithEnvPrefix("MYAPP_"),
+		config.WithProvider(providers.NewEnvProvider(
+			providers.WithEnvPrefix("MYAPP_"),
 		)),
 	)
 	defer cfg.Close()

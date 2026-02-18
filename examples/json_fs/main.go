@@ -6,6 +6,7 @@ import (
 	"testing/fstest"
 
 	config "github.com/gasmod/gas-config"
+	"github.com/gasmod/gas-config/providers"
 )
 
 type AppConfig struct {
@@ -48,9 +49,9 @@ func main() {
 	// initialize config instance
 	cfg := config.New(
 		config.WithProvider(
-			config.NewJSONProvider(
-				config.WithJSONFilePath("config.json"),
-				config.WithJSONFileFS(&fsys),
+			providers.NewJSONProvider(
+				providers.WithJSONFilePath("config.json"),
+				providers.WithJSONFileFS(&fsys),
 			),
 		),
 	)

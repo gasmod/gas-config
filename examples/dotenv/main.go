@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	config "github.com/gasmod/gas-config"
+	"github.com/gasmod/gas-config/providers"
 )
 
 type AppConfig struct {
@@ -26,7 +27,7 @@ type AppConfig struct {
 func main() {
 	// initialize config instance
 	cfg := config.New(
-		config.WithProvider(config.NewDotEnvProvider()), // default DotEnv file path is ".env"
+		config.WithProvider(providers.NewDotEnvProvider()), // default DotEnv file path is ".env"
 	)
 	defer cfg.Close()
 

@@ -81,7 +81,7 @@ func TestExtension_PreLoad(t *testing.T) {
 			cfg := config.New()
 
 			// Call PreLoad
-			err := extension.PreLoad(context.Background(), &cfg.Config)
+			err := extension.PreLoad(context.Background(), cfg)
 
 			// Verify no error
 			if err != nil {
@@ -176,7 +176,7 @@ func TestExtension_PostLoad(t *testing.T) {
 			cfg.Set(tt.configKey, tt.configValue)
 
 			// Call PostLoad
-			err := extension.PostLoad(context.Background(), &cfg.Config)
+			err := extension.PostLoad(context.Background(), cfg)
 
 			// Verify no error
 			if err != nil {
@@ -205,7 +205,7 @@ func TestExtension_PostLoad_NoEnvironmentChange(t *testing.T) {
 	cfg := config.New()
 	cfg.Set(extension.configKey, "production")
 
-	err := extension.PostLoad(context.Background(), &cfg.Config)
+	err := extension.PostLoad(context.Background(), cfg)
 
 	if err != nil {
 		t.Errorf("Extension.PostLoad() error = %v, want nil", err)
@@ -295,12 +295,12 @@ func TestExtension_ExtensionInterface(t *testing.T) {
 	cfg := config.New()
 	ctx := context.Background()
 
-	err := extension.PreLoad(ctx, &cfg.Config)
+	err := extension.PreLoad(ctx, cfg)
 	if err != nil {
 		t.Errorf("PreLoad() error = %v, want nil", err)
 	}
 
-	err = extension.PostLoad(ctx, &cfg.Config)
+	err = extension.PostLoad(ctx, cfg)
 	if err != nil {
 		t.Errorf("PostLoad() error = %v, want nil", err)
 	}

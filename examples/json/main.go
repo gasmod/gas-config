@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	config "github.com/gasmod/gas-config"
+	"github.com/gasmod/gas-config/providers"
 )
 
 type AppConfig struct {
@@ -26,8 +27,8 @@ type AppConfig struct {
 func main() {
 	// initialize config instance
 	cfg := config.New(
-		config.WithProvider(config.NewJSONProvider(
-			config.WithJSONFilePath("config.json"),
+		config.WithProvider(providers.NewJSONProvider(
+			providers.WithJSONFilePath("config.json"),
 		)),
 	)
 	defer cfg.Close()

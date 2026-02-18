@@ -1,10 +1,11 @@
-package config_test
+package providers_test
 
 import (
 	"testing"
 	"testing/fstest"
 
-	config "github.com/gasmod/gas-config"
+	"github.com/gasmod/gas-config/providers"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +13,7 @@ import (
 func TestJSONProvider_DefaultOptions(t *testing.T) {
 	t.Parallel()
 
-	p := config.NewJSONProvider()
+	p := providers.NewJSONProvider()
 	_, err := p.Load()
 	assert.Error(t, err)
 }
@@ -20,8 +21,8 @@ func TestJSONProvider_DefaultOptions(t *testing.T) {
 func TestJSONProvider_WithJSONFile_FileNotFound(t *testing.T) {
 	t.Parallel()
 
-	p := config.NewJSONProvider(
-		config.WithJSONFilePath("non-existing.json"),
+	p := providers.NewJSONProvider(
+		providers.WithJSONFilePath("non-existing.json"),
 	)
 	_, err := p.Load()
 	assert.Error(t, err)
@@ -36,9 +37,9 @@ func TestJSONProvider_WithJSONFile(t *testing.T) {
 		},
 	}
 
-	p := config.NewJSONProvider(
-		config.WithJSONFilePath("config.json"),
-		config.WithJSONFileFS(&fsys),
+	p := providers.NewJSONProvider(
+		providers.WithJSONFilePath("config.json"),
+		providers.WithJSONFileFS(&fsys),
 	)
 
 	values, err := p.Load()

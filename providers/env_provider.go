@@ -1,4 +1,4 @@
-package config
+package providers
 
 import (
 	"os"
@@ -11,7 +11,8 @@ const (
 	// defaultEnvSeparator is the default separator for nested map values.
 	defaultEnvSeparator = "__"
 
-	envProviderName = "Environment Variables"
+	// EnvProviderName represents the name of the environment variable-based configuration provider.
+	EnvProviderName = "Environment Variables"
 )
 
 // EnvProvider reads configuration from environment variables.
@@ -92,5 +93,5 @@ func (p *EnvProvider) Load() (map[string]any, error) {
 
 // Name implements the Provider interface.
 func (p *EnvProvider) Name() string {
-	return envProviderName
+	return EnvProviderName
 }

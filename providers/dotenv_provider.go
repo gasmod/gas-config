@@ -1,4 +1,4 @@
-package config
+package providers
 
 import (
 	"errors"
@@ -85,7 +85,7 @@ func WithDotEnvFileFS(fileFS fs.FS) DotEnvOption {
 	}
 }
 
-// WithDotEnvFileNotFoundPanic sets the flag to panic of the .env file
+// WithDotEnvFileNotFoundPanic sets the flag to panic if the .env file
 // is not found.
 //
 // Default: true.
