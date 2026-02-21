@@ -40,7 +40,7 @@ type Extension struct {
 //
 // The env extension must be registered as an extension with config:
 //
-//	cfg := config.New(nil, []config.Extension{envExt})()
+//	cfg := config.New(config.WithExtension(envExt))()
 func NewExtension(opts ...EnvOption) *Extension {
 	em := &Extension{
 		envVarName: DefaultEnvVarName,

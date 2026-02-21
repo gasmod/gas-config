@@ -27,12 +27,11 @@ type AppConfig struct {
 func main() {
 	// initialize config service
 	cfg := config.New(
-		[]providers.Provider{
+		config.WithProvider(
 			providers.NewJSONProvider(
 				providers.WithJSONFilePath("config.json"),
 			),
-		},
-		nil,
+		),
 	)()
 	defer cfg.Close()
 

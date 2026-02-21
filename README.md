@@ -31,13 +31,12 @@ import (
 func main() {
     app := gas.NewApp(
         gas.WithService[*config.Config](config.New(
-            []providers.Provider{
+            config.WithProvider(
                 providers.NewJSONProvider(
                     providers.WithJSONFilePath("config.json"),
                 ),
-                providers.NewDotEnvProvider(),
-            },
-            nil, // no extensions
+            ),
+            config.WithProvider(providers.NewDotEnvProvider()),
         ), gas.ServiceLifetimeSingleton),
     )
 
@@ -58,13 +57,12 @@ import (
 func main() {
     // Create the config service with providers
     cfg := config.New(
-        []providers.Provider{
+        config.WithProvider(
             providers.NewJSONProvider(
                 providers.WithJSONFilePath("config.json"),
             ),
-            providers.NewDotEnvProvider(),
-        },
-        nil, // no extensions
+        ),
+        config.WithProvider(providers.NewDotEnvProvider()),
     )()
 
     // Load configuration
@@ -103,30 +101,33 @@ export DATABASE_PORT=5432
 ```
 
 ```go
-cfg := config.New(nil, nil)() // EnvProvider included by default
+cfg := config.New()() // EnvProvider included by default
 ```
 
 Options:
 
 ```go
-providers.NewEnvProvider(
-    providers.WithEnvPrefix("APP"),          // filter by prefix
-    providers.WithEnvSeparator("__"),        // custom separator for nesting
-    providers.WithEnvNormalizeVarNames(true), // snake_case to camelCase
-)
+config.New(
+    config.WithProvider(
+        providers.NewEnvProvider(
+            providers.WithEnvPrefix("APP"),
+            providers.WithEnvSeparator("__"),
+            providers.WithEnvNormalizeVarNames(true),
+        ),
+    ),
+)()
 ```
 
 ### JSON files
 
 ```go
 config.New(
-    []providers.Provider{
+    config.WithProvider(
         providers.NewJSONProvider(
             providers.WithJSONFilePath("config.json"),
             providers.WithJSONFileFS(embeddedFS), // optional: custom fs.FS
         ),
-    },
-    nil,
+    ),
 )()
 ```
 
@@ -134,14 +135,13 @@ config.New(
 
 ```go
 config.New(
-    []providers.Provider{
+    config.WithProvider(
         providers.NewDotEnvProvider(
             providers.WithDotEnvFilePath(".env"),
-            providers.WithDotEnvFileNotFoundPanic(false), // silently skip if missing
-            providers.WithDotEnvFileAppendToOSEnv(true),  // add vars to os.Environ
+            providers.WithDotEnvFileNotFoundPanic(false),
+            providers.WithDotEnvFileAppendToOSEnv(true),
         ),
-    },
-    nil,
+    ),
 )()
 ```
 
@@ -162,12 +162,9 @@ Later providers override earlier ones. The auto-registered `EnvProvider` is prep
 
 ```go
 cfg := config.New(
-    []providers.Provider{
-        providers.NewJSONProvider(...),    // base config
-        providers.NewDotEnvProvider(),     // overrides JSON
-        // EnvProvider is prepended automatically (lowest priority)
-    },
-    nil,
+    config.WithProvider(providers.NewJSONProvider(...)),    // base config
+    config.WithProvider(providers.NewDotEnvProvider()),     // overrides JSON
+    // EnvProvider is prepended automatically (lowest priority)
 )()
 ```
 
@@ -225,7 +222,7 @@ type Extension interface {
 ```
 
 ```go
-cfg := config.New(nil, []config.Extension{myExtension})()
+cfg := config.New(config.WithExtension(myExtension))()
 ```
 
 ### gas-env
@@ -241,10 +238,8 @@ import (
 envExt := gasenv.NewExtension()
 
 cfg := config.New(
-    []providers.Provider{
-        providers.NewDotEnvProvider(),
-    },
-    []config.Extension{envExt},
+    config.WithProvider(providers.NewDotEnvProvider()),
+    config.WithExtension(envExt),
 )()
 
 if err := cfg.Init(); err != nil {
@@ -267,10 +262,10 @@ fmt.Println(envExt.IsDevelopmentLike()) // true
 
 ```go
 gasenv.NewExtension(
-    gasenv.WithEnvVarName("APP_ENV"),          // custom OS variable name
-    gasenv.WithDefault(gasenv.Production),      // custom default
-    gasenv.WithConfigKey("AppEnv"),             // custom config key (default: "GasEnv")
-    gasenv.WithAllowedEnvs(gasenv.Production, gasenv.Staging), // restrict valid values
+    gasenv.WithEnvVarName("APP_ENV"),
+    gasenv.WithDefault(gasenv.Production),
+    gasenv.WithConfigKey("AppEnv"),
+    gasenv.WithAllowedEnvs(gasenv.Production, gasenv.Staging),
 )
 ```
 

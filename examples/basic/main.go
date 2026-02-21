@@ -38,7 +38,7 @@ func main() {
 	initEnvVars()
 
 	// initialize config service
-	cfg := config.New(nil, nil)() // by default, it uses the env provider
+	cfg := config.New()() // by default, it uses the env provider
 	defer cfg.Close()
 
 	// Load configuration

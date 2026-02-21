@@ -20,7 +20,7 @@ package gasenv
 //
 //	// Setup and load configuration
 //	envExt := gasenv.NewExtension()
-//	cfg := config.New(nil, []config.Extension{envExt})()
+//	cfg := config.New(config.WithExtension(envExt))()
 //	cfg.Init()
 //
 //	var appConfig AppConfig

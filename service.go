@@ -11,26 +11,37 @@ import (
 // serviceName specifies the identifier for this service.
 const serviceName = "gas-config"
 
+// Option configures the config service constructor.
+type Option func(*Config)
+
+// WithProvider adds a configuration provider (env, JSON, .env, etc.).
+func WithProvider(p providers.Provider) Option {
+	return func(c *Config) {
+		c.providers = append(c.providers, p)
+	}
+}
+
+// WithExtension registers an extension that provides pre/post-load hooks.
+func WithExtension(ext Extension) Option {
+	return func(c *Config) {
+		c.extensions = append(c.extensions, ext)
+	}
+}
+
 // New returns a DI constructor for the config service.
-// Providers define configuration sources (env, JSON, .env files, etc.).
-// Extensions provide pre/post-load hooks.
 // An EnvProvider is automatically prepended if none is provided.
-func New(provs []providers.Provider, extensions []Extension) func() *Config {
+func New(opts ...Option) func() *Config {
 	return func() *Config {
-		if provs == nil {
-			provs = make([]providers.Provider, 0)
-		}
-
-		if extensions == nil {
-			extensions = make([]Extension, 0)
-		}
-
 		c := &Config{
 			values:     make(map[string]any),
-			providers:  provs,
-			extensions: extensions,
+			providers:  make([]providers.Provider, 0),
+			extensions: make([]Extension, 0),
 			validate:   validator.New(),
 			closed:     atomic.Bool{},
+		}
+
+		for _, opt := range opts {
+			opt(c)
 		}
 
 		hasEnvProvider := false

@@ -40,12 +40,11 @@ func main() {
 
 	// initialize config service
 	cfg := config.New(
-		[]providers.Provider{
+		config.WithProvider(
 			providers.NewEnvProvider(
 				providers.WithEnvPrefix("MYAPP_"),
 			),
-		},
-		nil,
+		),
 	)()
 	defer cfg.Close()
 

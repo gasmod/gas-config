@@ -7,7 +7,7 @@ package gasenv
 // Example:
 //
 //	envExt := gasenv.NewExtension()
-//	cfg := config.New(nil, []config.Extension{envExt})()
+//	cfg := config.New(config.WithExtension(envExt))()
 //	cfg.Init()
 //
 //	switch envExt.Current() {
