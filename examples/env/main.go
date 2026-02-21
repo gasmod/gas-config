@@ -38,12 +38,15 @@ func initEnvVars() {
 func main() {
 	initEnvVars()
 
-	// initialize config instance
+	// initialize config service
 	cfg := config.New(
-		config.WithProvider(providers.NewEnvProvider(
-			providers.WithEnvPrefix("MYAPP_"),
-		)),
-	)
+		[]providers.Provider{
+			providers.NewEnvProvider(
+				providers.WithEnvPrefix("MYAPP_"),
+			),
+		},
+		nil,
+	)()
 	defer cfg.Close()
 
 	// Load configuration

@@ -25,12 +25,15 @@ type AppConfig struct {
 }
 
 func main() {
-	// initialize config instance
+	// initialize config service
 	cfg := config.New(
-		config.WithProvider(providers.NewJSONProvider(
-			providers.WithJSONFilePath("config.json"),
-		)),
-	)
+		[]providers.Provider{
+			providers.NewJSONProvider(
+				providers.WithJSONFilePath("config.json"),
+			),
+		},
+		nil,
+	)()
 	defer cfg.Close()
 
 	// Load configuration

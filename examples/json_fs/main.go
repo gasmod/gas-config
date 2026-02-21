@@ -46,15 +46,16 @@ func main() {
 		},
 	}
 
-	// initialize config instance
+	// initialize config service
 	cfg := config.New(
-		config.WithProvider(
+		[]providers.Provider{
 			providers.NewJSONProvider(
 				providers.WithJSONFilePath("config.json"),
 				providers.WithJSONFileFS(&fsys),
 			),
-		),
-	)
+		},
+		nil,
+	)()
 	defer cfg.Close()
 
 	// Load configuration

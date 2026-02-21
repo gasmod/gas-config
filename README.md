@@ -1,11 +1,11 @@
 # gas-config
 
-Configuration management module for the [Gas ecosystem](https://github.com/gasmod). Supports loading from multiple providers (environment variables, JSON files, `.env` files) and binding to Go structs.
+Configuration management service for the [Gas ecosystem](https://github.com/gasmod). Supports loading from multiple providers (environment variables, JSON files, `.env` files) and binding to Go structs.
 
 ## Features
 
-- **Gas Module interface**: Implements `Name()`, `Init()`, `Close()` for seamless integration with the Gas base server
-- **Functional options**: Configure providers and extensions via `WithProvider()` and `WithExtension()`
+- **Gas Service interface**: Implements `Name()`, `Init()`, `Close()` for seamless integration with the Gas DI container
+- **DI-compatible constructor**: `New()` returns a curried constructor for use with `gas.WithService`
 - **Multiple providers**: Environment variables, JSON files, `.env` files, and custom providers
 - **Hierarchical config**: Nested access via dot notation (e.g., `database.host`)
 - **Struct binding**: Type-safe binding with validation support
@@ -23,27 +23,58 @@ go get github.com/gasmod/gas-config
 package main
 
 import (
+    "github.com/gasmod/gas"
     config "github.com/gasmod/gas-config"
+    "github.com/gasmod/gas-config/providers"
 )
 
 func main() {
-    // Create the config module with providers
-    cfgMod := config.New(
-        config.WithProvider(config.NewJSONProvider(
-            config.WithJSONFilePath("config.json"),
-        )),
-        config.WithProvider(config.NewDotEnvProvider()),
+    app := gas.NewApp(
+        gas.WithService[*config.Config](config.New(
+            []providers.Provider{
+                providers.NewJSONProvider(
+                    providers.WithJSONFilePath("config.json"),
+                ),
+                providers.NewDotEnvProvider(),
+            },
+            nil, // no extensions
+        ), gas.ServiceLifetimeSingleton),
     )
 
-    // In a Gas app, the base server calls Init() automatically.
-    // For standalone use:
-    if err := cfgMod.Init(); err != nil {
+    app.Run()
+}
+```
+
+## Standalone usage
+
+```go
+package main
+
+import (
+    config "github.com/gasmod/gas-config"
+    "github.com/gasmod/gas-config/providers"
+)
+
+func main() {
+    // Create the config service with providers
+    cfg := config.New(
+        []providers.Provider{
+            providers.NewJSONProvider(
+                providers.WithJSONFilePath("config.json"),
+            ),
+            providers.NewDotEnvProvider(),
+        },
+        nil, // no extensions
+    )()
+
+    // Load configuration
+    if err := cfg.Init(); err != nil {
         panic(err)
     }
 
     // Bind to a struct
-    var cfg AppConfig
-    if err := cfgMod.Bind(&cfg); err != nil {
+    var appCfg AppConfig
+    if err := cfg.Bind(&appCfg); err != nil {
         panic(err)
     }
 }
@@ -72,36 +103,46 @@ export DATABASE_PORT=5432
 ```
 
 ```go
-cfgMod := config.New() // EnvProvider included by default
+cfg := config.New(nil, nil)() // EnvProvider included by default
 ```
 
 Options:
 
 ```go
-config.NewEnvProvider(
-    config.WithEnvPrefix("APP"),         // filter by prefix
-    config.WithEnvSeparator("__"),       // custom separator for nesting
-    config.WithEnvNormalizeVarNames(true), // snake_case to camelCase
+providers.NewEnvProvider(
+    providers.WithEnvPrefix("APP"),          // filter by prefix
+    providers.WithEnvSeparator("__"),        // custom separator for nesting
+    providers.WithEnvNormalizeVarNames(true), // snake_case to camelCase
 )
 ```
 
 ### JSON files
 
 ```go
-config.WithProvider(config.NewJSONProvider(
-    config.WithJSONFilePath("config.json"),
-    config.WithJSONFileFS(embeddedFS), // optional: custom fs.FS
-))
+config.New(
+    []providers.Provider{
+        providers.NewJSONProvider(
+            providers.WithJSONFilePath("config.json"),
+            providers.WithJSONFileFS(embeddedFS), // optional: custom fs.FS
+        ),
+    },
+    nil,
+)()
 ```
 
 ### `.env` files
 
 ```go
-config.WithProvider(config.NewDotEnvProvider(
-    config.WithDotEnvFilePath(".env"),
-    config.WithDotEnvFileNotFoundPanic(false), // silently skip if missing
-    config.WithDotEnvFileAppendToOSEnv(true),  // add vars to os.Environ
-))
+config.New(
+    []providers.Provider{
+        providers.NewDotEnvProvider(
+            providers.WithDotEnvFilePath(".env"),
+            providers.WithDotEnvFileNotFoundPanic(false), // silently skip if missing
+            providers.WithDotEnvFileAppendToOSEnv(true),  // add vars to os.Environ
+        ),
+    },
+    nil,
+)()
 ```
 
 ### Custom providers
@@ -120,30 +161,33 @@ type Provider interface {
 Later providers override earlier ones. The auto-registered `EnvProvider` is prepended, so explicit providers take precedence:
 
 ```go
-cfgMod := config.New(
-    config.WithProvider(config.NewJSONProvider(...)),  // base config
-    config.WithProvider(config.NewDotEnvProvider()), // overrides JSON
-    // EnvProvider is prepended automatically (lowest priority)
-)
+cfg := config.New(
+    []providers.Provider{
+        providers.NewJSONProvider(...),    // base config
+        providers.NewDotEnvProvider(),     // overrides JSON
+        // EnvProvider is prepended automatically (lowest priority)
+    },
+    nil,
+)()
 ```
 
 ## Reading values
 
 ```go
 // Get a single value
-host := cfgMod.Get("database.host")
+host := cfg.Get("database.host")
 
 // Check if a value exists
-val, exists := cfgMod.Find("database.host")
+val, exists := cfg.Find("database.host")
 
 // Set defaults (won't override loaded values)
-cfgMod.SetDefault("database.port", 5432)
+cfg.SetDefault("database.port", 5432)
 
 // Set a value (overrides loaded values)
-cfgMod.Set("database.host", "127.0.0.1")
+cfg.Set("database.host", "127.0.0.1")
 
 // Get all values
-allValues := cfgMod.Values()
+allValues := cfg.Values()
 ```
 
 ## Struct binding
@@ -157,13 +201,13 @@ type DBConfig struct {
     Password string `json:"password" validate:"required"`
 }
 
-var cfg DBConfig
-if err := cfgMod.Bind(&cfg); err != nil {
+var dbCfg DBConfig
+if err := cfg.Bind(&dbCfg); err != nil {
     log.Fatal(err)
 }
 
 // Disable validation
-cfgMod.Bind(&cfg, config.WithValidate(false))
+cfg.Bind(&dbCfg, config.WithValidate(false))
 ```
 
 Supported types: all int/uint/float variants, bool, string, `time.Duration`, slices (including comma-separated strings), maps, nested structs, and embedded structs.
@@ -181,9 +225,7 @@ type Extension interface {
 ```
 
 ```go
-cfgMod := config.New(
-    config.WithExtension(myExtension),
-)
+cfg := config.New(nil, []config.Extension{myExtension})()
 ```
 
 ### gas-env
@@ -198,12 +240,14 @@ import (
 
 envExt := gasenv.NewExtension()
 
-cfgMod := config.New(
-    config.WithExtension(envExt),
-    config.WithProvider(config.NewDotEnvProvider()),
-)
+cfg := config.New(
+    []providers.Provider{
+        providers.NewDotEnvProvider(),
+    },
+    []config.Extension{envExt},
+)()
 
-if err := cfgMod.Init(); err != nil {
+if err := cfg.Init(); err != nil {
     panic(err)
 }
 
@@ -241,9 +285,9 @@ type AppConfig struct {
     }
 }
 
-var cfg AppConfig
-cfgMod.Bind(&cfg)
-fmt.Println(cfg.GasEnv.IsProduction()) // false
+var appCfg AppConfig
+cfg.Bind(&appCfg)
+fmt.Println(appCfg.GasEnv.IsProduction()) // false
 ```
 
 ## Examples

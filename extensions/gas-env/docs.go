@@ -16,7 +16,7 @@
 //	envExt := gasenv.NewExtension()
 //
 //	// Create config config with the environment extension
-//	cfg := config.New(config.WithExtension(envExt))
+//	cfg := config.New(nil, []config.Extension{envExt})()
 //
 //	// Load configuration
 //	if err := cfg.Init(); err != nil {

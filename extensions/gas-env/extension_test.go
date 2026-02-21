@@ -78,7 +78,7 @@ func TestExtension_PreLoad(t *testing.T) {
 			)
 
 			// Create config
-			cfg := config.New()
+			cfg := config.New(nil, nil)()
 
 			// Call PreLoad
 			err := extension.PreLoad(context.Background(), cfg)
@@ -172,7 +172,7 @@ func TestExtension_PostLoad(t *testing.T) {
 			extension.currentEnv = Development
 
 			// Create config and set value
-			cfg := config.New()
+			cfg := config.New(nil, nil)()
 			cfg.Set(tt.configKey, tt.configValue)
 
 			// Call PostLoad
@@ -202,7 +202,7 @@ func TestExtension_PostLoad_NoEnvironmentChange(t *testing.T) {
 	extension := NewExtension()
 	extension.currentEnv = Production
 
-	cfg := config.New()
+	cfg := config.New(nil, nil)()
 	cfg.Set(extension.configKey, "production")
 
 	err := extension.PostLoad(context.Background(), cfg)
@@ -229,7 +229,7 @@ func TestExtension_IntegrationWithGasConfig(t *testing.T) {
 		)
 
 		// Create config with env extension
-		cfg := config.New(config.WithExtension(extension))
+		cfg := config.New(nil, []config.Extension{extension})()
 
 		// Load configuration
 		err := cfg.Init()
@@ -259,7 +259,7 @@ func TestExtension_IntegrationWithGasConfig(t *testing.T) {
 			WithConfigKey("IntegrationTestEnv"))
 
 		// Create config with env extension
-		cfg := config.New(config.WithExtension(extension))
+		cfg := config.New(nil, []config.Extension{extension})()
 
 		// Set a config default that should NOT override the env var
 		cfg.SetDefault("IntegrationTestEnv", "production")
@@ -292,7 +292,7 @@ func TestExtension_ExtensionInterface(t *testing.T) {
 	}
 
 	// Test that PreLoad and PostLoad methods exist and can be called
-	cfg := config.New()
+	cfg := config.New(nil, nil)()
 	ctx := context.Background()
 
 	err := extension.PreLoad(ctx, cfg)
