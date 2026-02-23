@@ -60,22 +60,6 @@ func WithDotEnvSeparator(sep string) DotEnvOption {
 	}
 }
 
-// WithDotEnvNormalizeVarNames sets a flag to normalize variable names.
-// If set to true, all variable names are converted from snake_case to lowercase identifier
-// (snake case without underscores).
-// This is useful to access environment variable names like "DATABASE_URL" with the key "DatabaseUrl".
-//
-// Note:
-// Variables can still be accessed using the original name, e.g., "database_url" -> "database_url",
-// this only adds an alternative name and will NOT override the original names.
-//
-// Default: true.
-func WithDotEnvNormalizeVarNames(normalized bool) DotEnvOption {
-	return func(p *DotEnvProvider) {
-		p.normalizeVarNames = normalized
-	}
-}
-
 // WithDotEnvFileFS sets the fs of which to read the .env file from.
 //
 // Default: sysfs.SysFS.
@@ -151,7 +135,7 @@ func (p *DotEnvProvider) Load() (map[string]any, error) {
 		}
 	}
 
-	return env.ParseVariables(vars, p.prefix, p.separator, p.normalizeVarNames), nil
+	return env.ParseVariables(vars, p.prefix, p.separator), nil
 }
 
 // Name implements the Provider interface.

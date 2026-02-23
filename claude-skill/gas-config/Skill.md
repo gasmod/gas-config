@@ -119,13 +119,15 @@ providers.NewEnvProvider(opts ...EnvOption) *EnvProvider
 Options:
 
 ```go
-providers.WithEnvPrefix(prefix string)             // filter by prefix, stripped from keys
-providers.WithEnvSeparator(sep string)             // custom nesting separator (default "_")
-providers.WithEnvNormalizeVarNames(normalized bool) // snake_case → camelCase
+providers.WithEnvPrefix(prefix string)  // filter by prefix, stripped from keys
+providers.WithEnvSeparator(sep string)  // nesting separator (default "__")
 ```
 
-Env vars map to nested config via `_` separators:
-`DATABASE_HOST` → `database.host`
+Env vars are lowercased and kept as flat `snake_case` keys by default:
+`DATABASE_HOST` → `database_host`
+
+Use `__` (double underscore) for nested map creation:
+`DATABASE__HOST` → `database.host`
 
 Constant: `providers.EnvProviderName = "Environment Variables"`
 
@@ -155,12 +157,13 @@ Options:
 
 ```go
 providers.WithDotEnvFilePath(filePath string)               // default: ".env"
-providers.WithDotEnvSeparator(sep string)                   // nesting separator
-providers.WithDotEnvNormalizeVarNames(normalized bool)       // snake_case → camelCase
+providers.WithDotEnvSeparator(sep string)                   // nesting separator (default "__")
 providers.WithDotEnvFileFS(fileFS fs.FS)                    // custom filesystem
 providers.WithDotEnvFileNotFoundPanic(panicIfNotFound bool)  // default: true
 providers.WithDotEnvFileAppendToOSEnv(appendToOSEnv bool)    // inject into os.Environ
 ```
+
+Same key conventions as `EnvProvider`: flat `snake_case` by default, `__` for nesting.
 
 Errors: `providers.ErrDotEnvFilePathNotSet`, `providers.ErrDotEnvFileReadFailed`,
 `providers.ErrDotEnvParseFailed`, `providers.ErrSetEnv`

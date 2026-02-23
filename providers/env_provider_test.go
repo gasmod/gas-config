@@ -17,9 +17,7 @@ func TestEnvProvider_DefaultOptions(t *testing.T) {
 	values, err := p.Load()
 	require.NoError(t, err)
 
-	// Value can be accessed using both original AND normalized names
 	assert.Equal(t, "test_value", values["test_key"])
-	assert.Equal(t, "test_value", values["testkey"])
 }
 
 func TestEnvProvider_WithEnvPrefix(t *testing.T) {
@@ -32,7 +30,7 @@ func TestEnvProvider_WithEnvPrefix(t *testing.T) {
 
 	values, err := p.Load()
 	require.NoError(t, err)
-	assert.Equal(t, "test_value", values["testkey"])
+	assert.Equal(t, "test_value", values["test_key"])
 }
 
 func TestEnvProvider_WithEnvSeparator(t *testing.T) {
@@ -56,16 +54,7 @@ func TestEnvProvider_StandardNameDiscovery(t *testing.T) {
 	values, err := p.Load()
 	require.NoError(t, err)
 
-	// Value can be accessed as nested map via standard "_" separator
-	nested, ok := values["db"].(map[string]any)
-	assert.True(t, ok, "expected nested map under 'db'")
-	assert.Equal(t, "localhost", nested["host"])
-
-	// Original flat key still accessible
 	assert.Equal(t, "localhost", values["db_host"])
-
-	// Normalized key still accessible
-	assert.Equal(t, "localhost", values["dbhost"])
 }
 
 func TestEnvProvider_StandardNameDiscoveryWithPrefix(t *testing.T) {
@@ -78,24 +67,13 @@ func TestEnvProvider_StandardNameDiscoveryWithPrefix(t *testing.T) {
 	values, err := p.Load()
 	require.NoError(t, err)
 
-	// After prefix stripping, "DB_HOST" is nested via "_"
-	nested, ok := values["db"].(map[string]any)
-	assert.True(t, ok, "expected nested map under 'db'")
-	assert.Equal(t, "localhost", nested["host"])
-
-	// Original flat key still accessible
-	assert.Equal(t, "localhost", values["myapp_db_host"])
-
-	// Normalized key still accessible
-	assert.Equal(t, "localhost", values["dbhost"])
+	assert.Equal(t, "localhost", values["db_host"])
 }
 
 func TestEnvProvider_WithEnvNormalizeVarNames(t *testing.T) {
 	t.Setenv("TEST_KEY", "test_value")
 
-	p := providers.NewEnvProvider(
-		providers.WithEnvNormalizeVarNames(false),
-	)
+	p := providers.NewEnvProvider()
 
 	values, err := p.Load()
 	require.NoError(t, err)

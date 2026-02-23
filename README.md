@@ -93,11 +93,18 @@ type AppConfig struct {
 
 ### Environment variables (default)
 
-An `EnvProvider` is automatically added if none is provided. Environment variables map to nested config via `_` separators:
+An `EnvProvider` is automatically added if none is provided. Environment variables are lowercased and kept as flat `snake_case` keys by default:
 
 ```bash
-export DATABASE_HOST=localhost
-export DATABASE_PORT=5432
+export DATABASE_HOST=localhost   # → database_host
+export DATABASE_PORT=5432        # → database_port
+```
+
+To create nested maps, use `__` (double underscore) as the separator:
+
+```bash
+export DATABASE__HOST=localhost  # → database.host (nested)
+export DATABASE__PORT=5432       # → database.port (nested)
 ```
 
 ```go
@@ -112,7 +119,6 @@ config.New(
         providers.NewEnvProvider(
             providers.WithEnvPrefix("APP"),
             providers.WithEnvSeparator("__"),
-            providers.WithEnvNormalizeVarNames(true),
         ),
     ),
 )()
@@ -132,6 +138,8 @@ config.New(
 ```
 
 ### `.env` files
+
+`.env` variables follow the same key conventions as env vars: lowercased, flat `snake_case` by default; use `__` for nesting.
 
 ```go
 config.New(

@@ -47,7 +47,7 @@ func TestDotEnvProvider_WithDotEnvFile(t *testing.T) {
 
 	values, err := p.Load()
 	require.NoError(t, err)
-	assert.Equal(t, "test_value", values["testkey"])
+	assert.Equal(t, "test_value", values["test_key"])
 }
 
 func TestDotEnvProvider_WithEnvSeparator(t *testing.T) {
@@ -87,7 +87,6 @@ func TestDotEnvProvider_WithEnvNormalizeVarNames(t *testing.T) {
 	p := providers.NewDotEnvProvider(
 		providers.WithDotEnvFilePath(".env"),
 		providers.WithDotEnvFileFS(&fsys),
-		providers.WithDotEnvNormalizeVarNames(false), // keep original variable names
 	)
 
 	values, err := p.Load()
@@ -115,8 +114,8 @@ func TestDotEnvProvider_Syntax(t *testing.T) {
 
 	values, err := p.Load()
 	require.NoError(t, err)
-	assert.Equal(t, "test_value", values["testkey"])
-	assert.Equal(t, "test_value2", values["testkey2"])
+	assert.Equal(t, "test_value", values["test_key"])
+	assert.Equal(t, "test_value2", values["test_key2"])
 }
 
 func TestDotEnvProvider_WithDotEnvFile_FileNotFoundNoPanic(t *testing.T) {
@@ -146,7 +145,7 @@ func TestDotEnvProvider_AppendToOSEnv(t *testing.T) {
 
 	values, err := p.Load()
 	require.NoError(t, err)
-	assert.Equal(t, "test_value", values["testkey"])
+	assert.Equal(t, "test_value", values["test_key"])
 	assert.Equal(t, "test_value", os.Getenv("TEST_KEY"))
 }
 
@@ -167,6 +166,6 @@ func TestDotEnvProvider_NoAppendToOSEnv(t *testing.T) {
 
 	values, err := p.Load()
 	require.NoError(t, err)
-	assert.Equal(t, "test_value", values["mykey"])
+	assert.Equal(t, "test_value", values["my_key"])
 	assert.Empty(t, os.Getenv("MY_KEY"), "Expected os.Getenv(\"MY_KEY\") to be empty")
 }

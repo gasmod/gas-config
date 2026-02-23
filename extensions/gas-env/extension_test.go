@@ -256,19 +256,21 @@ func TestExtension_IntegrationWithGasConfig(t *testing.T) {
 		// Create extension
 		extension := NewExtension(
 			WithEnvVarName("INTEGRATION_TEST_ENV"),
-			WithConfigKey("IntegrationTestEnv"))
+			WithConfigKey("integration_test_env"))
 
 		// Create config with env extension
 		cfg := config.New(config.WithExtension(extension))()
 
 		// Set a config default that should NOT override the env var
-		cfg.SetDefault("IntegrationTestEnv", "production")
+		cfg.SetDefault("integration_test_env", "production")
 
 		// Load configuration
 		err := cfg.Init()
 		if err != nil {
 			t.Errorf("Config.Load() error = %v, want nil", err)
 		}
+
+		t.Log(cfg.Values())
 
 		// The environment from env var should be used initially (PreLoad)
 		// But since we set a default in config, it should remain as development

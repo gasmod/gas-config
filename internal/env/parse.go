@@ -9,7 +9,7 @@ import (
 
 const (
 	objSep = ":"
-	envSep = "_"
+	//envSep = "_"
 )
 
 // ParseVariables processes a map of environment variables into a nested map structure.
@@ -17,9 +17,8 @@ const (
 // - vars: map of environment variable key-value pairs to process
 // - pre: prefix to filter variables by (variables not matching prefix are excluded)
 // - sep: separator used in environment variable names to create nested structure
-// - normalizeKey: whether to normalize keys by removing underscore separators
 // Returns a nested map[string]any containing the processed environment variables.
-func ParseVariables(vars map[string]string, pre, sep string, normalizeKey bool) map[string]any {
+func ParseVariables(vars map[string]string, pre, sep string) map[string]any {
 	data := make(map[string]any)
 
 	pre = strings.ToLower(strings.TrimSpace(pre))
@@ -32,11 +31,11 @@ func ParseVariables(vars map[string]string, pre, sep string, normalizeKey bool) 
 			continue
 		}
 
-		normalizedKey := key
+		//normalizedKey := key
 
 		if pre != "" {
 			if after, ok := strings.CutPrefix(key, pre); ok {
-				normalizedKey = after
+				key = after
 			} else {
 				continue // Skip if doesn't match prefix
 			}
@@ -44,20 +43,20 @@ func ParseVariables(vars map[string]string, pre, sep string, normalizeKey bool) 
 
 		// The user's provided separator is usually "__", normalizing the keys
 		// by removing '_' will likely break the user's provided separator.
-		normalizedKey = strings.ReplaceAll(normalizedKey, sep, objSep)
+		//normalizedKey = strings.ReplaceAll(normalizedKey, sep, objSep)
 
-		if normalizeKey {
-			// Convert "snake_case_key" to "snakecasekey", this can be accessed later
-			// as "snakeCaseKey" or "SnakeCaseKey".
-			normalizedKey = strings.ReplaceAll(normalizedKey, envSep, "")
-
-			if sep != "" {
-				// Build nested map structure
-				BuildNestedMap(data, normalizedKey, value, objSep)
-			} else {
-				data[normalizedKey] = value
-			}
-		}
+		//if normalizeKey {
+		//	// Convert "snake_case_key" to "snakecasekey", this can be accessed later
+		//	// as "snakeCaseKey" or "SnakeCaseKey".
+		//	normalizedKey = strings.ReplaceAll(normalizedKey, envSep, "")
+		//
+		//	if sep != "" {
+		//		// Build nested map structure
+		//		BuildNestedMap(data, normalizedKey, value, objSep)
+		//	} else {
+		//		data[normalizedKey] = value
+		//	}
+		//}
 
 		// Continue using the original keys anyway.
 		if sep != "" {

@@ -17,9 +17,8 @@ const (
 
 // EnvProvider reads configuration from environment variables.
 type EnvProvider struct {
-	prefix            string
-	separator         string
-	normalizeVarNames bool
+	prefix    string
+	separator string
 }
 
 var _ Provider = (*EnvProvider)(nil)
@@ -44,28 +43,9 @@ func WithEnvSeparator(sep string) EnvOption {
 	}
 }
 
-// WithEnvNormalizeVarNames sets a flag to normalize variable names.
-// If set to true, all variable names are converted from snake_case to lowercase identifier
-// (snake case without underscores).
-// This is useful to access environment variable names like "DATABASE_URL" with the key "DatabaseUrl".
-//
-// Note:
-// Variables can still be accessed using the original name, e.g., "database_url" -> "database_url",
-// this only adds an alternative name and will NOT override the original names.
-//
-// Default: true.
-func WithEnvNormalizeVarNames(normalized bool) EnvOption {
-	return func(p *EnvProvider) {
-		p.normalizeVarNames = normalized
-	}
-}
-
 // NewEnvProvider creates an environment variable provider with options.
 func NewEnvProvider(opts ...EnvOption) *EnvProvider {
-	p := &EnvProvider{
-		separator:         defaultEnvSeparator,
-		normalizeVarNames: true,
-	}
+	p := &EnvProvider{separator: defaultEnvSeparator}
 
 	for _, opt := range opts {
 		opt(p)
@@ -88,7 +68,7 @@ func (p *EnvProvider) Load() (map[string]any, error) {
 		vars[parts[0]] = parts[1]
 	}
 
-	return env.ParseVariables(vars, p.prefix, p.separator, p.normalizeVarNames), nil
+	return env.ParseVariables(vars, p.prefix, p.separator), nil
 }
 
 // Name implements the Provider interface.
