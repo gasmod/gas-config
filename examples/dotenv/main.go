@@ -27,7 +27,9 @@ type AppConfig struct {
 func main() {
 	// initialize config service
 	cfg := config.New(
-		config.WithProvider(providers.NewDotEnvProvider()), // default DotEnv file path is ".env"
+		config.WithProvider(
+			providers.NewDotEnvProvider(providers.WithDotEnvSeparator("__")),
+		), // default DotEnv file path is ".env"
 	)()
 	defer cfg.Close()
 

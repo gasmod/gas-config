@@ -44,17 +44,8 @@ func New(opts ...Option) func() *Config {
 			opt(c)
 		}
 
-		hasEnvProvider := false
-
-		for _, p := range c.providers {
-			if p.Name() == providers.EnvProviderName {
-				hasEnvProvider = true
-				break
-			}
-		}
-
-		if !hasEnvProvider {
-			c.providers = append([]providers.Provider{providers.NewEnvProvider()}, c.providers...)
+		if len(c.providers) == 0 {
+			c.providers = append(c.providers, providers.NewEnvProvider())
 		}
 
 		return c
