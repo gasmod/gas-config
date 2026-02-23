@@ -45,11 +45,10 @@ func main() {
 				providers.WithEnvPrefix("MYAPP_"),
 			),
 		),
-	)()
-	defer cfg.Close()
+	)
 
 	// Load configuration
-	if err := cfg.Init(); err != nil {
+	if err := cfg.Load(); err != nil {
 		panic(err)
 	}
 

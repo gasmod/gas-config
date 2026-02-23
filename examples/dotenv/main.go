@@ -30,11 +30,10 @@ func main() {
 		config.WithProvider(
 			providers.NewDotEnvProvider(providers.WithDotEnvSeparator("__")),
 		), // default DotEnv file path is ".env"
-	)()
-	defer cfg.Close()
+	)
 
 	// Load configuration
-	if err := cfg.Init(); err != nil {
+	if err := cfg.Load(); err != nil {
 		panic(err)
 	}
 

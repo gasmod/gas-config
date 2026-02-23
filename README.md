@@ -4,8 +4,7 @@ Configuration management service for the [Gas ecosystem](https://github.com/gasm
 
 ## Features
 
-- **Gas Service interface**: Implements `Name()`, `Init()`, `Close()` for seamless integration with the Gas DI container
-- **DI-compatible constructor**: `New()` returns a curried constructor for use with `gas.WithService`
+- **Early initialization**: `New()` returns `*Config` directly — create and load before the app starts
 - **Multiple providers**: Environment variables, JSON files, `.env` files, and custom providers
 - **Hierarchical config**: Nested access via dot notation (e.g., `database.host`)
 - **Struct binding**: Type-safe binding with validation support
@@ -17,7 +16,45 @@ Configuration management service for the [Gas ecosystem](https://github.com/gasm
 go get github.com/gasmod/gas-config
 ```
 
-## Usage with Gas
+## Usage
+
+### Standalone
+
+```go
+package main
+
+import (
+    config "github.com/gasmod/gas-config"
+    "github.com/gasmod/gas-config/providers"
+)
+
+func main() {
+    // Create and load config before anything else
+    cfg := config.New(
+        config.WithProvider(
+            providers.NewJSONProvider(
+                providers.WithJSONFilePath("config.json"),
+            ),
+        ),
+        config.WithProvider(providers.NewDotEnvProvider()),
+    )
+
+    if err := cfg.Load(); err != nil {
+        panic(err)
+    }
+
+    // Bind to a struct
+    var appCfg AppConfig
+    if err := cfg.Bind(&appCfg); err != nil {
+        panic(err)
+    }
+}
+```
+
+### With Gas App
+
+Config is loaded before `app.Run()` and registered as a singleton instance so
+other services can receive it as `gas.ConfigProvider` via constructor injection.
 
 ```go
 package main
@@ -29,52 +66,25 @@ import (
 )
 
 func main() {
-    app := gas.NewApp(
-        gas.WithService[*config.Config](config.New(
-            config.WithProvider(
-                providers.NewJSONProvider(
-                    providers.WithJSONFilePath("config.json"),
-                ),
-            ),
-            config.WithProvider(providers.NewDotEnvProvider()),
-        ), gas.ServiceLifetimeSingleton),
-    )
-
-    app.Run()
-}
-```
-
-## Standalone usage
-
-```go
-package main
-
-import (
-    config "github.com/gasmod/gas-config"
-    "github.com/gasmod/gas-config/providers"
-)
-
-func main() {
-    // Create the config service with providers
     cfg := config.New(
+        config.WithProvider(providers.NewDotEnvProvider()),
         config.WithProvider(
             providers.NewJSONProvider(
                 providers.WithJSONFilePath("config.json"),
             ),
         ),
-        config.WithProvider(providers.NewDotEnvProvider()),
-    )()
+    )
 
-    // Load configuration
-    if err := cfg.Init(); err != nil {
+    if err := cfg.Load(); err != nil {
         panic(err)
     }
 
-    // Bind to a struct
-    var appCfg AppConfig
-    if err := cfg.Bind(&appCfg); err != nil {
-        panic(err)
-    }
+    app := gas.NewApp(
+        gas.WithServiceInstance[gas.ConfigProvider](cfg),
+        // other services ...
+    )
+
+    app.Run()
 }
 
 type AppConfig struct {
@@ -108,7 +118,7 @@ export DATABASE__PORT=5432       # → database.port (nested)
 ```
 
 ```go
-cfg := config.New()() // EnvProvider included by default
+cfg := config.New() // EnvProvider included by default
 ```
 
 Options:
@@ -121,7 +131,7 @@ config.New(
             providers.WithEnvSeparator("__"),
         ),
     ),
-)()
+)
 ```
 
 ### JSON files
@@ -134,7 +144,7 @@ config.New(
             providers.WithJSONFileFS(embeddedFS), // optional: custom fs.FS
         ),
     ),
-)()
+)
 ```
 
 ### `.env` files
@@ -150,7 +160,7 @@ config.New(
             providers.WithDotEnvFileAppendToOSEnv(true),
         ),
     ),
-)()
+)
 ```
 
 ### Custom providers
@@ -173,7 +183,7 @@ cfg := config.New(
     config.WithProvider(providers.NewJSONProvider(...)),    // base config
     config.WithProvider(providers.NewDotEnvProvider()),     // overrides JSON
     // EnvProvider is prepended automatically (lowest priority)
-)()
+)
 ```
 
 ## Reading values
@@ -230,7 +240,7 @@ type Extension interface {
 ```
 
 ```go
-cfg := config.New(config.WithExtension(myExtension))()
+cfg := config.New(config.WithExtension(myExtension))
 ```
 
 ### gas-env
@@ -248,9 +258,9 @@ envExt := gasenv.NewExtension()
 cfg := config.New(
     config.WithProvider(providers.NewDotEnvProvider()),
     config.WithExtension(envExt),
-)()
+)
 
-if err := cfg.Init(); err != nil {
+if err := cfg.Load(); err != nil {
     panic(err)
 }
 

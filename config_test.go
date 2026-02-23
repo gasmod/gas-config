@@ -33,9 +33,9 @@ func TestConfig_WithProviders(t *testing.T) {
 
 	mockP1 := &mockProvider{name: "mock1", data: map[string]any{"mock1key": "m1value"}}
 	mockP2 := &mockProvider{name: "mock2", data: map[string]any{"mock2key": "m2value"}}
-	cfg := config.New(config.WithProvider(mockP1), config.WithProvider(mockP2))()
+	cfg := config.New(config.WithProvider(mockP1), config.WithProvider(mockP2))
 
-	require.NoError(t, cfg.Init())
+	require.NoError(t, cfg.Load())
 
 	// Check that data from mocks is loaded
 	assert.Equal(t, "m1value", cfg.Get("mock1key"))
@@ -47,9 +47,9 @@ func TestConfig_WithEnvProvider_AlreadyPresent(t *testing.T) {
 
 	mockP1 := &mockProvider{name: "env", data: map[string]any{"customEnv": "custom"}}
 	mockP2 := &mockProvider{name: "mock2", data: map[string]any{"mockKey": "mockValue"}}
-	cfg := config.New(config.WithProvider(mockP1), config.WithProvider(mockP2))()
+	cfg := config.New(config.WithProvider(mockP1), config.WithProvider(mockP2))
 
-	err := cfg.Init()
+	err := cfg.Load()
 	require.NoError(t, err)
 
 	assert.Equal(t, "custom", cfg.Get("customEnv"))
@@ -59,9 +59,9 @@ func TestConfig_WithEnvProvider_AlreadyPresent(t *testing.T) {
 func TestConfig_NoProviders(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
-	require.NoError(t, cfg.Init())
+	require.NoError(t, cfg.Load())
 	// NOTE: actual env variables may be present in Values()
 	assert.NotNil(t, cfg.Values())
 }
@@ -70,9 +70,9 @@ func TestConfig_LoadProviderError(t *testing.T) {
 	t.Parallel()
 
 	mockP1 := &mockProvider{name: "mock1", err: errors.New("load failed")}
-	cfg := config.New(config.WithProvider(mockP1))()
+	cfg := config.New(config.WithProvider(mockP1))
 
-	err := cfg.Init()
+	err := cfg.Load()
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load from provider mock1: load failed")
 	assert.ErrorIs(t, err, config.ErrProviderLoadFailed)
@@ -85,9 +85,9 @@ func TestConfig_Bind(t *testing.T) {
 		"myKey": "value",
 	}}
 
-	cfg := config.New(config.WithProvider(mockP1))()
+	cfg := config.New(config.WithProvider(mockP1))
 
-	require.NoError(t, cfg.Init())
+	require.NoError(t, cfg.Load())
 
 	obj := struct {
 		MyKey string
@@ -114,9 +114,9 @@ func TestConfig_Bind_WithValidate(t *testing.T) {
 		"myKey": "longer-than-10-characters",
 	}}
 
-	cfg := config.New(config.WithProvider(mockP1))()
+	cfg := config.New(config.WithProvider(mockP1))
 
-	require.NoError(t, cfg.Init())
+	require.NoError(t, cfg.Load())
 
 	obj := struct {
 		MyKey string `validate:"required,min=1,max=10"`
@@ -137,9 +137,9 @@ func TestConfig_Get(t *testing.T) {
 			"key": "nestedvalue",
 		},
 	}}
-	cfg := config.New(config.WithProvider(mockP1))()
+	cfg := config.New(config.WithProvider(mockP1))
 
-	err := cfg.Init()
+	err := cfg.Load()
 	require.NoError(t, err)
 
 	assert.Equal(t, "value", cfg.Get("simple"))
@@ -153,9 +153,9 @@ func TestConfig_Values(t *testing.T) {
 	t.Parallel()
 
 	mockP1 := &mockProvider{name: "mock", data: map[string]any{"key": "value"}}
-	cfg := config.New(config.WithProvider(mockP1))()
+	cfg := config.New(config.WithProvider(mockP1))
 
-	err := cfg.Init()
+	err := cfg.Load()
 	require.NoError(t, err)
 
 	values := cfg.Values()
@@ -167,7 +167,7 @@ func TestConfig_Values(t *testing.T) {
 func TestConfig_SetDefault_Basic(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.SetDefault("key", "value")
 
@@ -177,7 +177,7 @@ func TestConfig_SetDefault_Basic(t *testing.T) {
 func TestConfig_SetDefault_Nested(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.SetDefault("database.host", "localhost")
 
@@ -195,7 +195,7 @@ func TestConfig_SetDefault_Nested(t *testing.T) {
 func TestConfig_SetDefault_MultipleLevels(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.SetDefault("a.b.c.d", "deepvalue")
 
@@ -214,7 +214,7 @@ func TestConfig_SetDefault_MultipleLevels(t *testing.T) {
 func TestConfig_SetDefault_EmptyKey(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.SetDefault("", "value")
 
@@ -227,7 +227,7 @@ func TestConfig_SetDefault_EmptyKey(t *testing.T) {
 func TestConfig_SetDefault_NoOverride(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.SetDefault("key", "oldvalue")
 	assert.Equal(t, "oldvalue", cfg.Get("key"))
@@ -240,7 +240,7 @@ func TestConfig_SetDefault_NoOverride(t *testing.T) {
 func TestConfig_SetDefault_WithSpaces(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.SetDefault("key.with spaces", "value")
 
@@ -250,7 +250,7 @@ func TestConfig_SetDefault_WithSpaces(t *testing.T) {
 func TestConfig_SetDefaults_ValidStruct(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	s := struct {
 		Key   string
@@ -270,7 +270,7 @@ func TestConfig_SetDefaults_ValidStruct(t *testing.T) {
 func TestConfig_SetDefaults_StructWithoutJSONTags(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	s := struct {
 		Key   string
@@ -290,7 +290,7 @@ func TestConfig_SetDefaults_StructWithoutJSONTags(t *testing.T) {
 func TestConfig_SetDefaults_Map(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	m := map[string]any{
 		"key1": "value1",
@@ -309,7 +309,7 @@ func TestConfig_SetDefaults_Map(t *testing.T) {
 func TestConfig_SetDefaults_NilValues(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	err := cfg.SetDefaults(nil)
 	require.Error(t, err)
@@ -319,7 +319,7 @@ func TestConfig_SetDefaults_NilValues(t *testing.T) {
 func TestConfig_SetDefaults_InvalidType(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	err := cfg.SetDefaults(42) // not a pointer
 	require.Error(t, err)
@@ -328,7 +328,7 @@ func TestConfig_SetDefaults_InvalidType(t *testing.T) {
 func TestConfig_SetDefaults_NilPointer(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	var s *struct{}
 
@@ -339,7 +339,7 @@ func TestConfig_SetDefaults_NilPointer(t *testing.T) {
 func TestConfig_SetDefaults_PointerToNonStructNonMap(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	x := 42
 
@@ -350,7 +350,7 @@ func TestConfig_SetDefaults_PointerToNonStructNonMap(t *testing.T) {
 func TestConfig_SetDefaults_EmptyStruct(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	s := struct{}{}
 
@@ -365,7 +365,7 @@ func TestConfig_SetDefaults_EmptyStruct(t *testing.T) {
 func TestConfig_SetDefaults_Merge(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	s1 := struct {
 		Key1 string `json:"key1"`
@@ -387,7 +387,7 @@ func TestConfig_SetDefaults_Merge(t *testing.T) {
 func TestConfig_SetDefaults_NestedStruct(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	s := struct {
 		Database struct {
@@ -409,7 +409,7 @@ func TestConfig_SetDefaults_NestedStruct(t *testing.T) {
 func TestConfig_GetAfterSetDefaults(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	m := map[string]any{
 		"app": map[string]any{
@@ -428,7 +428,7 @@ func TestConfig_GetAfterSetDefaults(t *testing.T) {
 func TestConfig_SetDefaultAndSetDefaultsInteraction(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.SetDefault("key", "setdefault")
 	assert.Equal(t, "setdefault", cfg.Get("key"))
@@ -447,7 +447,7 @@ func TestConfig_SetDefaultAndSetDefaultsInteraction(t *testing.T) {
 func TestConfig_SetDefault_NestedNoOverride(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.SetDefault("database.host", "localhost")
 	cfg.SetDefault("database.port", 5432)
@@ -465,7 +465,7 @@ func TestConfig_SetDefault_NestedNoOverride(t *testing.T) {
 func TestConfig_SetDefaults_NoOverride(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	// Set initial values
 	cfg.SetDefault("key1", "original1")
@@ -504,7 +504,7 @@ func TestConfig_SetDefaults_NoOverride(t *testing.T) {
 func TestConfig_Set_Basic(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.Set("key", "value")
 	assert.Equal(t, "value", cfg.Get("key"))
@@ -513,7 +513,7 @@ func TestConfig_Set_Basic(t *testing.T) {
 func TestConfig_Set_Nested(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.Set("database.host", "localhost")
 	assert.Equal(t, "localhost", cfg.Get("database.host"))
@@ -530,7 +530,7 @@ func TestConfig_Set_Nested(t *testing.T) {
 func TestConfig_Set_Override(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.Set("key", "oldvalue")
 	assert.Equal(t, "oldvalue", cfg.Get("key"))
@@ -543,7 +543,7 @@ func TestConfig_Set_Override(t *testing.T) {
 func TestConfig_Set_EmptyKey(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.Set("", "value")
 
@@ -555,7 +555,7 @@ func TestConfig_Set_EmptyKey(t *testing.T) {
 func TestConfig_Set_MultipleLevels(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.Set("a.b.c.d", "deepvalue")
 	assert.Equal(t, "deepvalue", cfg.Get("a.b.c.d"))
@@ -573,7 +573,7 @@ func TestConfig_Set_MultipleLevels(t *testing.T) {
 func TestConfig_Set_OverrideNested(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	cfg.Set("database.host", "localhost")
 	cfg.Set("database.port", 5432)
@@ -591,7 +591,7 @@ func TestConfig_Set_OverrideNested(t *testing.T) {
 func TestConfig_Find_Basic(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 	cfg.Set("key", "value")
 
 	value, exists := cfg.Find("key")
@@ -602,7 +602,7 @@ func TestConfig_Find_Basic(t *testing.T) {
 func TestConfig_Find_Nested(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 	cfg.Set("database.host", "localhost")
 
 	value, exists := cfg.Find("database.host")
@@ -613,7 +613,7 @@ func TestConfig_Find_Nested(t *testing.T) {
 func TestConfig_Find_NonExistent(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	value, exists := cfg.Find("nonexistent")
 	assert.False(t, exists)
@@ -623,7 +623,7 @@ func TestConfig_Find_NonExistent(t *testing.T) {
 func TestConfig_Find_NestedNonExistent(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 	cfg.Set("database.host", "localhost")
 
 	value, exists := cfg.Find("database.nonexistent")
@@ -638,7 +638,7 @@ func TestConfig_Find_NestedNonExistent(t *testing.T) {
 func TestConfig_Find_EmptyKey(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	value, exists := cfg.Find("")
 	assert.False(t, exists)
@@ -654,9 +654,9 @@ func TestConfig_Find_WithProvider(t *testing.T) {
 			"key": "nestedvalue",
 		},
 	}}
-	cfg := config.New(config.WithProvider(mockP1))()
+	cfg := config.New(config.WithProvider(mockP1))
 
-	err := cfg.Init()
+	err := cfg.Load()
 	require.NoError(t, err)
 
 	value, exists := cfg.Find("simple")
@@ -675,7 +675,7 @@ func TestConfig_Find_WithProvider(t *testing.T) {
 func TestConfig_SetDefaultVsSet_Behavior(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	// Test SetDefault doesn't override
 	cfg.SetDefault("key1", "default1")
@@ -695,7 +695,7 @@ func TestConfig_SetDefaultVsSet_Behavior(t *testing.T) {
 func TestConfig_SetDefaults_NoOverride_Complex(t *testing.T) {
 	t.Parallel()
 
-	cfg := config.New()()
+	cfg := config.New()
 
 	// Set some initial configuration
 	cfg.Set("app.name", "myapp")

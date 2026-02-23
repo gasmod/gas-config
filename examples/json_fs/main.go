@@ -54,11 +54,10 @@ func main() {
 				providers.WithJSONFileFS(&fsys),
 			),
 		),
-	)()
-	defer cfg.Close()
+	)
 
 	// Load configuration
-	if err := cfg.Init(); err != nil {
+	if err := cfg.Load(); err != nil {
 		panic(err)
 	}
 

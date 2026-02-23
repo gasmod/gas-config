@@ -41,6 +41,45 @@ type Config struct {
 	closed     atomic.Bool
 }
 
+// Option configures the config service constructor.
+type Option func(*Config)
+
+// WithProvider adds a configuration provider (env, JSON, .env, etc.).
+func WithProvider(p providers.Provider) Option {
+	return func(c *Config) {
+		c.providers = append(c.providers, p)
+	}
+}
+
+// WithExtension registers an extension that provides pre/post-Load hooks.
+func WithExtension(ext Extension) Option {
+	return func(c *Config) {
+		c.extensions = append(c.extensions, ext)
+	}
+}
+
+// New creates and returns a new Config instance, applying the provided functional options.
+// If no providers are specified, an EnvProvider is added as the default.
+func New(opts ...Option) *Config {
+	c := &Config{
+		values:     make(map[string]any),
+		providers:  make([]providers.Provider, 0),
+		extensions: make([]Extension, 0),
+		validate:   validator.New(),
+		closed:     atomic.Bool{},
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	if len(c.providers) == 0 {
+		c.providers = append(c.providers, providers.NewEnvProvider())
+	}
+
+	return c
+}
+
 // SetDefault sets a default value for the specified key in the configuration.
 // It creates nested maps if they do not exist, but does not override existing values.
 func (c *Config) SetDefault(key string, value any) {
@@ -113,17 +152,17 @@ func (c *Config) Set(key string, value any) {
 	}
 }
 
-// load loads configuration from all registered providers and applies pre/post-load hooks
+// Load loads configuration from all registered providers and applies pre/post-Load hooks
 // defined by extensions.
 //
 // Returns an error if any provider or extension hook fails during the loading process.
-func (c *Config) load() error {
-	return c.loadWithContext(context.Background())
+func (c *Config) Load() error {
+	return c.LoadWithContext(context.Background())
 }
 
-// loadWithContext loads configuration with the provided context, executing pre-load and post-load
+// LoadWithContext loads configuration with the provided context, executing pre-Load and post-Load
 // hooks for extensions.
-func (c *Config) loadWithContext(ctx context.Context) error {
+func (c *Config) LoadWithContext(ctx context.Context) error {
 	for _, ext := range c.extensions {
 		if err := ext.PreLoad(ctx, c); err != nil {
 			return fmt.Errorf("%w %s: %w", ErrExtensionPreLoadHookFailed, ext.Name(), err)

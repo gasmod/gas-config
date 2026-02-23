@@ -38,11 +38,10 @@ func main() {
 	initEnvVars()
 
 	// initialize config service
-	cfg := config.New()() // by default, it uses the env provider
-	defer cfg.Close()
+	cfg := config.New() // by default, it uses the env provider
 
 	// Load configuration
-	if err := cfg.Init(); err != nil {
+	if err := cfg.Load(); err != nil {
 		panic(err)
 	}
 

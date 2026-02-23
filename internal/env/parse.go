@@ -7,11 +7,6 @@ import (
 	"strings"
 )
 
-const (
-	objSep = ":"
-	//envSep = "_"
-)
-
 // ParseVariables processes a map of environment variables into a nested map structure.
 // It takes the following parameters:
 // - vars: map of environment variable key-value pairs to process
@@ -31,8 +26,6 @@ func ParseVariables(vars map[string]string, pre, sep string) map[string]any {
 			continue
 		}
 
-		//normalizedKey := key
-
 		if pre != "" {
 			if after, ok := strings.CutPrefix(key, pre); ok {
 				key = after
@@ -40,23 +33,6 @@ func ParseVariables(vars map[string]string, pre, sep string) map[string]any {
 				continue // Skip if doesn't match prefix
 			}
 		}
-
-		// The user's provided separator is usually "__", normalizing the keys
-		// by removing '_' will likely break the user's provided separator.
-		//normalizedKey = strings.ReplaceAll(normalizedKey, sep, objSep)
-
-		//if normalizeKey {
-		//	// Convert "snake_case_key" to "snakecasekey", this can be accessed later
-		//	// as "snakeCaseKey" or "SnakeCaseKey".
-		//	normalizedKey = strings.ReplaceAll(normalizedKey, envSep, "")
-		//
-		//	if sep != "" {
-		//		// Build nested map structure
-		//		BuildNestedMap(data, normalizedKey, value, objSep)
-		//	} else {
-		//		data[normalizedKey] = value
-		//	}
-		//}
 
 		// Continue using the original keys anyway.
 		if sep != "" {

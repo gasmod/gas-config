@@ -70,7 +70,7 @@ func TestWithGasEnv_IntegrationWithGasConfig(t *testing.T) {
 			WithConfigKey("GasEnv"),
 		)
 
-		cfg := config.New(config.WithExtension(extension))()
+		cfg := config.New(config.WithExtension(extension))
 
 		// Set some additional config values
 		cfg.SetDefault("database.host", "localhost")
@@ -78,7 +78,7 @@ func TestWithGasEnv_IntegrationWithGasConfig(t *testing.T) {
 		cfg.SetDefault("debug", true)
 
 		// Load configuration
-		err := cfg.Init()
+		err := cfg.Load()
 		if err != nil {
 			t.Fatalf("Config.Load() error = %v", err)
 		}
@@ -152,9 +152,9 @@ func TestWithGasEnv_IntegrationWithGasConfig(t *testing.T) {
 				t.Setenv("CONDITIONAL_TEST_ENV", tt.envValue)
 
 				extension := NewExtension(WithEnvVarName("CONDITIONAL_TEST_ENV"))
-				cfg := config.New(config.WithExtension(extension))()
+				cfg := config.New(config.WithExtension(extension))
 
-				err := cfg.Init()
+				err := cfg.Load()
 				if err != nil {
 					t.Fatalf("Config.Load() error = %v", err)
 				}
@@ -276,9 +276,9 @@ func TestWithGasEnv_ComparisonWithExtension(t *testing.T) {
 		}
 
 		extension := NewExtension(WithEnvVarName("COMPARISON_TEST_ENV"))
-		cfg := config.New(config.WithExtension(extension))()
+		cfg := config.New(config.WithExtension(extension))
 
-		err := cfg.Init()
+		err := cfg.Load()
 		if err != nil {
 			t.Fatalf("Config.Load() error = %v", err)
 		}

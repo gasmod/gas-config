@@ -7,7 +7,7 @@ description: >
   involving configuration loading, providers (env, JSON, .env), struct binding,
   hierarchical dot-notation access, ConfigProvider interface, extensions with
   pre/post-load hooks, gas-env environment detection, SetDefault/SetDefaults,
-  or DI wiring of config into Gas services.
+  or wiring config into Gas apps via gas.WithServiceInstance.
 ---
 
 # Gas Config Package Reference
@@ -27,26 +27,26 @@ import "github.com/gasmod/gas-config/providers"
 // Option configures the config service constructor.
 type Option func(*Config)
 
-func New(opts ...Option) func() *Config
+func New(opts ...Option) *Config
 
 func WithProvider(p providers.Provider) Option
 func WithExtension(ext Extension) Option
 ```
 
-`New` returns a curried DI-injectable constructor (`func() *Config`).
-An `EnvProvider` is automatically prepended if no provider named
-`"Environment Variables"` is present.
+`New` returns a `*Config` directly. Create and load config before the app
+starts — it is not wired through the DI container. An `EnvProvider` is
+automatically prepended if no provider named `"Environment Variables"` is
+present.
 
-## Config (Service)
+## Config
 
-Implements `gas.Service` and `gas.ConfigProvider`.
+Implements `gas.ConfigProvider`.
 
-### Lifecycle
+### Loading
 
 ```go
-func (c *Config) Name() string   // "gas-config"
-func (c *Config) Init() error    // loads config from all registered providers
-func (c *Config) Close() error   // no-op, graceful shutdown placeholder
+func (c *Config) Load() error                          // loads from all providers
+func (c *Config) LoadWithContext(ctx context.Context) error
 ```
 
 ### Reading values
@@ -290,39 +290,53 @@ var (
 )
 ```
 
-## DI Wiring
+## Usage
 
-### With Gas App
+Config is created and loaded before the Gas app or any other service.
 
-```go
-app := gas.NewApp(
-    gas.WithService[*config.Config](config.New(
-        config.WithProvider(providers.NewJSONProvider(
-            providers.WithJSONFilePath("config.json"),
-        )),
-        config.WithProvider(providers.NewDotEnvProvider()),
-    ), gas.ServiceLifetimeSingleton),
-)
-```
-
-### Standalone (no Gas App)
+### Standalone
 
 ```go
 cfg := config.New(
     config.WithProvider(providers.NewJSONProvider(
         providers.WithJSONFilePath("config.json"),
     )),
-)()
+)
 
-if err := cfg.Init(); err != nil {
+if err := cfg.Load(); err != nil {
     log.Fatal(err)
 }
-defer cfg.Close()
 
 var appCfg AppConfig
 if err := cfg.Bind(&appCfg); err != nil {
     log.Fatal(err)
 }
+```
+
+### With Gas App
+
+Load config first, then register as a singleton instance with
+`gas.WithServiceInstance`. Other services receive it as `gas.ConfigProvider`
+via constructor injection.
+
+```go
+cfg := config.New(
+    config.WithProvider(providers.NewDotEnvProvider()),
+    config.WithProvider(providers.NewJSONProvider(
+        providers.WithJSONFilePath("config.json"),
+    )),
+)
+
+if err := cfg.Load(); err != nil {
+    log.Fatal(err)
+}
+
+app := gas.NewApp(
+    gas.WithServiceInstance[gas.ConfigProvider](cfg),
+    // other services ...
+)
+
+app.Run()
 ```
 
 ### With gas-env extension
@@ -333,9 +347,9 @@ envExt := gasenv.NewExtension()
 cfg := config.New(
     config.WithProvider(providers.NewDotEnvProvider()),
     config.WithExtension(envExt),
-)()
+)
 
-if err := cfg.Init(); err != nil {
+if err := cfg.Load(); err != nil {
     log.Fatal(err)
 }
 
