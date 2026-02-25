@@ -112,13 +112,13 @@ func (c *Config) SetDefaults(values any) error {
 	defer c.mu.Unlock()
 
 	if val, ok := values.(map[string]any); ok {
-		maputils.MergeWithoutOverride(c.values, val)
+		maputils.MergeWithoutOverride(c.values, maputils.NormalizeKeys(val))
 
 		return nil
 	}
 
 	if val, ok := values.(*map[string]any); ok {
-		maputils.MergeWithoutOverride(c.values, *val)
+		maputils.MergeWithoutOverride(c.values, maputils.NormalizeKeys(*val))
 
 		return nil
 	}
@@ -128,8 +128,7 @@ func (c *Config) SetDefaults(values any) error {
 		return fmt.Errorf("unbind defaults: %w", err)
 	}
 
-	maputils.LowercaseKeys(tempValues)
-	maputils.MergeWithoutOverride(c.values, tempValues)
+	maputils.MergeWithoutOverride(c.values, maputils.NormalizeKeys(tempValues))
 
 	return nil
 }
@@ -179,7 +178,7 @@ func (c *Config) LoadWithContext(ctx context.Context) error {
 			return fmt.Errorf("%w %s: %w", ErrProviderLoadFailed, p.Name(), err)
 		}
 		// Merge values, later providers override
-		maputils.Merge(c.values, values)
+		maputils.Merge(c.values, maputils.NormalizeKeys(values))
 	}
 
 	c.mu.Unlock()
