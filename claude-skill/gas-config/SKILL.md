@@ -7,7 +7,9 @@ description: >
   involving configuration loading, providers (env, JSON, .env), struct binding,
   hierarchical dot-notation access, ConfigProvider interface, extensions with
   pre/post-load hooks, gas-env environment detection, SetDefault/SetDefaults,
-  or wiring config into Gas apps via gas.WithServiceInstance.
+  or wiring config into Gas apps via gas.WithServiceInstance. Make sure to use
+  this skill whenever working with configuration in Gas applications, even if
+  the user doesn't explicitly mention gas-config.
 ---
 
 # Gas Config Package Reference
@@ -34,9 +36,8 @@ func WithExtension(ext Extension) Option
 ```
 
 `New` returns a `*Config` directly. Create and load config before the app
-starts — it is not wired through the DI container. An `EnvProvider` is
-automatically prepended if no provider named `"Environment Variables"` is
-present.
+starts — it is not wired through the DI container. If no providers are
+specified, an `EnvProvider` is added as the sole default provider.
 
 ## Config
 
@@ -103,31 +104,33 @@ type Provider interface {
 
 ### Provider ordering
 
-Later providers override earlier ones. The auto-registered `EnvProvider` is
-prepended (lowest priority):
+Later providers override earlier ones. When you specify providers explicitly,
+no `EnvProvider` is auto-added — you must include it yourself if needed:
 
 ```
-EnvProvider (auto, lowest) → user providers in order (highest last)
+provider1 (lowest) → provider2 → provider3 (highest, wins on conflict)
 ```
 
-### Environment variables (default)
+If you specify **no** providers at all, a default `EnvProvider` is created
+automatically.
+
+### Environment variables
 
 ```go
 providers.NewEnvProvider(opts ...EnvOption) *EnvProvider
 ```
 
-Options:
+| Option | Signature | Description |
+|--------|-----------|-------------|
+| Prefix | `WithEnvPrefix(prefix string)` | Filter by prefix; prefix is stripped from keys |
+| Separator | `WithEnvSeparator(sep string)` | Nesting separator (default `"__"`) |
 
-```go
-providers.WithEnvPrefix(prefix string)  // filter by prefix, stripped from keys
-providers.WithEnvSeparator(sep string)  // nesting separator (default "__")
+Key conventions — env vars are lowercased and kept as flat `snake_case` keys:
+
 ```
-
-Env vars are lowercased and kept as flat `snake_case` keys by default:
-`DATABASE_HOST` → `database_host`
-
-Use `__` (double underscore) for nested map creation:
-`DATABASE__HOST` → `database.host`
+DATABASE_HOST  → database_host       (flat)
+DATABASE__HOST → database.host       (nested via __)
+```
 
 Constant: `providers.EnvProviderName = "Environment Variables"`
 
@@ -137,15 +140,12 @@ Constant: `providers.EnvProviderName = "Environment Variables"`
 providers.NewJSONProvider(opts ...JSONOption) *JSONProvider
 ```
 
-Options:
+| Option | Signature | Description |
+|--------|-----------|-------------|
+| File path | `WithJSONFilePath(filePath string)` | **Required** |
+| Custom FS | `WithJSONFileFS(fileFS fs.FS)` | e.g. `embed.FS` |
 
-```go
-providers.WithJSONFilePath(filePath string)  // required
-providers.WithJSONFileFS(fileFS fs.FS)       // optional: custom fs.FS (e.g. embed.FS)
-```
-
-Errors: `providers.ErrJSONFilePathNotSet`, `providers.ErrJSONFileReadFailed`,
-`providers.ErrJSONDecodeFailed`
+Errors: `ErrJSONFilePathNotSet`, `ErrJSONFileReadFailed`, `ErrJSONDecodeFailed`
 
 ### .env files
 
@@ -153,20 +153,18 @@ Errors: `providers.ErrJSONFilePathNotSet`, `providers.ErrJSONFileReadFailed`,
 providers.NewDotEnvProvider(opts ...DotEnvOption) *DotEnvProvider
 ```
 
-Options:
-
-```go
-providers.WithDotEnvFilePath(filePath string)               // default: ".env"
-providers.WithDotEnvSeparator(sep string)                   // nesting separator (default "__")
-providers.WithDotEnvFileFS(fileFS fs.FS)                    // custom filesystem
-providers.WithDotEnvFileNotFoundPanic(panicIfNotFound bool)  // default: true
-providers.WithDotEnvFileAppendToOSEnv(appendToOSEnv bool)    // inject into os.Environ
-```
+| Option | Signature | Default |
+|--------|-----------|---------|
+| File path | `WithDotEnvFilePath(filePath string)` | `".env"` |
+| Separator | `WithDotEnvSeparator(sep string)` | `"__"` |
+| Custom FS | `WithDotEnvFileFS(fileFS fs.FS)` | OS filesystem |
+| Panic if missing | `WithDotEnvFileNotFoundPanic(bool)` | `true` |
+| Inject into OS env | `WithDotEnvFileAppendToOSEnv(bool)` | `true` |
 
 Same key conventions as `EnvProvider`: flat `snake_case` by default, `__` for nesting.
 
-Errors: `providers.ErrDotEnvFilePathNotSet`, `providers.ErrDotEnvFileReadFailed`,
-`providers.ErrDotEnvParseFailed`, `providers.ErrSetEnv`
+Errors: `ErrDotEnvFilePathNotSet`, `ErrDotEnvFileReadFailed`,
+`ErrDotEnvParseFailed`, `ErrSetEnv`
 
 ## Extensions
 
@@ -198,14 +196,12 @@ config providers, OS variable, or default.
 gasenv.NewExtension(opts ...EnvOption) *Extension
 ```
 
-Options:
-
-```go
-gasenv.WithEnvVarName(name string)          // OS var to check (default: "GAS_ENV")
-gasenv.WithDefault(env Environment)         // fallback env (default: Development)
-gasenv.WithConfigKey(key string)            // config map key (default: "GasEnv")
-gasenv.WithAllowedEnvs(envs ...Environment) // valid envs (default: all four)
-```
+| Option | Signature | Default |
+|--------|-----------|---------|
+| OS var name | `WithEnvVarName(name string)` | `"GAS_ENV"` |
+| Default env | `WithDefault(env Environment)` | `Development` |
+| Config key | `WithConfigKey(key string)` | `"GasEnv"` |
+| Allowed envs | `WithAllowedEnvs(envs ...Environment)` | all four |
 
 #### Environment type and constants
 
@@ -225,17 +221,17 @@ Methods on `Environment`: `IsDevelopment()`, `IsTesting()`, `IsStaging()`,
 
 #### Extension API
 
-```go
-func (em *Extension) Name() string             // "GasEnv"
-func (em *Extension) Current() Environment
-func (em *Extension) Is(env Environment) bool
-func (em *Extension) IsDevelopment() bool
-func (em *Extension) IsTesting() bool
-func (em *Extension) IsStaging() bool
-func (em *Extension) IsProduction() bool
-func (em *Extension) IsDevelopmentLike() bool   // development || testing
-func (em *Extension) IsProductionLike() bool    // production || staging
-```
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `Name()` | `string` | `"GasEnv"` |
+| `Current()` | `Environment` | Resolved environment |
+| `Is(env)` | `bool` | Exact match |
+| `IsDevelopment()` | `bool` | `== Development` |
+| `IsTesting()` | `bool` | `== Testing` |
+| `IsStaging()` | `bool` | `== Staging` |
+| `IsProduction()` | `bool` | `== Production` |
+| `IsDevelopmentLike()` | `bool` | development or testing |
+| `IsProductionLike()` | `bool` | production or staging |
 
 #### Resolution priority
 
@@ -290,72 +286,84 @@ var (
 )
 ```
 
-## Usage
+## Complete Example
 
-Config is created and loaded before the Gas app or any other service.
-
-### Standalone
-
-```go
-cfg := config.New(
-    config.WithProvider(providers.NewJSONProvider(
-        providers.WithJSONFilePath("config.json"),
-    )),
-)
-
-if err := cfg.Load(); err != nil {
-    log.Fatal(err)
-}
-
-var appCfg AppConfig
-if err := cfg.Bind(&appCfg); err != nil {
-    log.Fatal(err)
-}
-```
-
-### With Gas App
-
-Load config first, then register as a singleton instance with
-`gas.WithServiceInstance`. Other services receive it as `gas.ConfigProvider`
-via constructor injection.
+Full example showing config with multiple providers, gas-env extension, and
+DI wiring into a Gas application:
 
 ```go
-cfg := config.New(
-    config.WithProvider(providers.NewDotEnvProvider()),
-    config.WithProvider(providers.NewJSONProvider(
-        providers.WithJSONFilePath("config.json"),
-    )),
+package main
+
+import (
+    "fmt"
+    "log"
+
+    "github.com/gasmod/gas"
+    config "github.com/gasmod/gas-config"
+    "github.com/gasmod/gas-config/providers"
+    gasenv "github.com/gasmod/gas-config/extensions/gas-env"
 )
 
-if err := cfg.Load(); err != nil {
-    log.Fatal(err)
+type AppConfig struct {
+    gasenv.WithGasEnv // auto-populated environment field
+    Database struct {
+        Host     string `json:"host" validate:"required"`
+        Port     int    `json:"port"`
+        Password string `json:"password" validate:"required"`
+    }
+    Server struct {
+        Host string `json:"host"`
+        Port int    `json:"port"`
+    }
 }
 
-app := gas.NewApp(
-    gas.WithServiceInstance[gas.ConfigProvider](cfg),
-    // other services ...
-)
+func main() {
+    // 1. Create the environment extension
+    envExt := gasenv.NewExtension()
 
-app.Run()
-```
+    // 2. Create config with providers and extensions
+    //    Later providers override earlier ones
+    cfg := config.New(
+        config.WithProvider(providers.NewEnvProvider(
+            providers.WithEnvPrefix("APP"),     // only APP_* vars
+        )),
+        config.WithProvider(providers.NewJSONProvider(
+            providers.WithJSONFilePath("config.json"), // base config
+        )),
+        config.WithProvider(providers.NewDotEnvProvider(
+            providers.WithDotEnvFileNotFoundPanic(false), // optional .env
+        )),
+        config.WithExtension(envExt),
+    )
 
-### With gas-env extension
+    // 3. Set defaults before loading (won't override provider values)
+    cfg.SetDefault("server.host", "0.0.0.0")
+    cfg.SetDefault("server.port", 8080)
 
-```go
-envExt := gasenv.NewExtension()
+    // 4. Load from all providers
+    if err := cfg.Load(); err != nil {
+        log.Fatal(err)
+    }
 
-cfg := config.New(
-    config.WithProvider(providers.NewDotEnvProvider()),
-    config.WithExtension(envExt),
-)
+    // 5. Bind to a typed struct with validation
+    var appCfg AppConfig
+    if err := cfg.Bind(&appCfg); err != nil {
+        log.Fatal(err)
+    }
 
-if err := cfg.Load(); err != nil {
-    log.Fatal(err)
+    // 6. Use environment checks
+    if envExt.IsDevelopmentLike() {
+        fmt.Println("Running in dev mode:", envExt.Current())
+    }
+
+    // 7. Wire into Gas app as ConfigProvider singleton
+    app := gas.NewApp(
+        gas.WithServiceInstance[gas.ConfigProvider](cfg),
+        // other services receive cfg via constructor injection
+    )
+
+    app.Run()
 }
-
-envExt.Current()           // "development"
-envExt.IsProduction()      // false
-envExt.IsDevelopmentLike() // true
 ```
 
 ### Consuming via gas.ConfigProvider
@@ -365,7 +373,7 @@ importing gas-config:
 
 ```go
 type Service struct {
-    cfg gas.ConfigProvider
+    cfg gas.ConfigProvider // per-request, not singleton
 }
 
 func New(cfg gas.ConfigProvider) *Service {
@@ -384,3 +392,16 @@ When packages like `gas-database` don't receive explicit `WithConfig`, they
 automatically bind from the injected `gas.ConfigProvider`. This lets you
 drive all service configuration from a single `.env` or JSON file without
 manual wiring.
+
+## Choosing a Provider
+
+| Use case | Provider | Notes |
+|----------|----------|-------|
+| 12-factor apps, containers | `EnvProvider` | Zero files, works everywhere |
+| Structured config with nesting | `JSONProvider` | Best for complex hierarchies |
+| Local dev, secrets not in git | `DotEnvProvider` | Familiar KEY=VALUE format |
+| All of the above | Stack them | Later providers win on conflicts |
+
+A common pattern is `EnvProvider` (base) + `JSONProvider` (structured defaults) +
+`DotEnvProvider` (local overrides). Remember: when specifying any provider
+explicitly, include `EnvProvider` yourself if you want OS env vars.
