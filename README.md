@@ -303,6 +303,38 @@ cfg.Bind(&appCfg)
 fmt.Println(appCfg.GasEnv.IsProduction()) // false
 ```
 
+## Testing
+
+The `configtest` package provides a mock that structurally satisfies `gas.ConfigProvider`:
+
+```go
+import "github.com/gasmod/gas-config/configtest"
+
+mock := &configtest.MockConfig{}
+mock.GetFn = func(key string) any {
+	if key == "database.host" {
+		return "localhost"
+	}
+	return nil
+}
+
+// assert calls:
+if mock.CallCount("Get") != 1 {
+	t.Error("expected one Get call")
+}
+```
+
+For tests that need real `Get`/`Find`/`Bind` semantics seeded with known values, use `NewMockConfigWithValues`, which delegates to a real `*config.Config` under the hood and avoids leaking real environment variables:
+
+```go
+mock, err := configtest.NewMockConfigWithValues(map[string]any{
+	"database.host": "localhost",
+	"database.port": 5432,
+})
+```
+
+Individual `Fn` fields can still be overridden afterwards, and `Calls`/`Reset`/`CallCount` work as usual.
+
 ## Examples
 
 See [`examples/`](./examples/) for complete examples:
