@@ -227,6 +227,17 @@ cfg.Bind(&dbCfg, config.WithValidate(false))
 
 Supported types: all int/uint/float variants, bool, string, `time.Duration`, slices (including comma-separated strings), maps, nested structs, and embedded structs.
 
+### Custom validator
+
+Pass `config.WithValidator` to `New` to use a caller-owned `*validator.Validate` (e.g. with custom tags registered). If omitted, a new `validator.New()` instance is used internally.
+
+```go
+v := validator.New()
+v.RegisterValidation("mytag", myValidatorFunc)
+
+cfg := config.New(config.WithValidator(v))
+```
+
 ## Extensions
 
 Extensions provide pre/post-load hooks:

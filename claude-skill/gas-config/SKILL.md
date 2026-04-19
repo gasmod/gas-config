@@ -33,6 +33,7 @@ func New(opts ...Option) *Config
 
 func WithProvider(p providers.Provider) Option
 func WithExtension(ext Extension) Option
+func WithValidator(v *validator.Validate) Option
 ```
 
 `New` returns a `*Config` directly. Create and load config before the app
@@ -84,7 +85,9 @@ func WithValidate(validate bool) BindOption
 ```
 
 Field matching: `json` tags first, then case-insensitive field names.
-Validation uses `go-playground/validator` tags (enabled by default).
+Validation uses `go-playground/validator` tags (enabled by default). Pass
+`config.WithValidator(v)` to `New` to use a caller-owned `*validator.Validate`
+(e.g. with custom tags registered); otherwise `validator.New()` is used.
 
 Supported types: all int/uint/float variants, bool, string, `time.Duration`,
 slices (including comma-separated strings), maps, nested structs, embedded

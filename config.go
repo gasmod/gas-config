@@ -58,6 +58,17 @@ func WithExtension(ext Extension) Option {
 	}
 }
 
+// WithValidator sets a custom validator instance, allowing callers to register
+// custom validation tags before constructing the Config. If not provided, a new
+// validator.New() instance is used.
+func WithValidator(v *validator.Validate) Option {
+	return func(c *Config) {
+		if v != nil {
+			c.validate = v
+		}
+	}
+}
+
 // New creates and returns a new Config instance, applying the provided functional options.
 // If no providers are specified, an EnvProvider is added as the default.
 func New(opts ...Option) *Config {
