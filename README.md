@@ -1,6 +1,6 @@
 # gas-config
 
-[![Test](https://github.com/gasmod/gas-config/actions/workflows/test.yml/badge.svg)](https://github.com/gasmod/gas-config/actions/workflows/test.yml) [![Go Reference](https://pkg.go.dev/badge/github.com/gasmod/gas-config.svg)](https://pkg.go.dev/github.com/gasmod/gas-config) [![Go Report Card](https://goreportcard.com/badge/github.com/gasmod/gas-config)](https://goreportcard.com/report/github.com/gasmod/gas-config) ![Go Version](https://img.shields.io/github/go-mod/go-version/gasmod/gas-config) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![Test](https://github.com/gasmod/gas-config/actions/workflows/test.yml/badge.svg)](https://github.com/gasmod/gas-config/actions/workflows/test.yml) [![Go Reference](https://pkg.go.dev/badge/github.com/gasmod/gas-config.svg)](https://pkg.go.dev/github.com/gasmod/gas-config) ![Go Version](https://img.shields.io/github/go-mod/go-version/gasmod/gas-config) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 Configuration management service for the [Gas ecosystem](https://github.com/gasmod). Supports loading from multiple providers (environment variables, JSON files, `.env` files) and binding to Go structs.
 
