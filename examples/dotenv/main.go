@@ -28,8 +28,10 @@ func main() {
 	// initialize config service
 	cfg := config.New(
 		config.WithProvider(
-			providers.NewDotEnvProvider(providers.WithDotEnvSeparator("__")),
-		), // default DotEnv file path is ".env"
+			providers.NewDotEnvProvider(
+				providers.WithDotEnvFilePath(".env.example"),
+			),
+		),
 	)
 
 	// Load configuration
