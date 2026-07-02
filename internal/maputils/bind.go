@@ -105,7 +105,7 @@ func Bind(src map[string]any, dest any) error {
 	}
 
 	rv := reflect.ValueOf(dest)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+	if rv.Kind() != reflect.Pointer || rv.IsNil() {
 		return ErrDestMustBePointer
 	}
 
@@ -139,11 +139,11 @@ func getFieldByPath(rv reflect.Value, path []int) reflect.Value {
 	for _, index := range path {
 		current = current.Field(index)
 		// If we encounter a pointer to an embedded struct, allocate it if nil
-		if current.Kind() == reflect.Ptr && current.IsNil() && current.CanSet() {
+		if current.Kind() == reflect.Pointer && current.IsNil() && current.CanSet() {
 			current.Set(reflect.New(current.Type().Elem()))
 		}
 		// Dereference pointer if needed
-		if current.Kind() == reflect.Ptr {
+		if current.Kind() == reflect.Pointer {
 			current = current.Elem()
 		}
 	}
@@ -164,7 +164,7 @@ func Unbind(src any, dest map[string]any) error {
 	}
 
 	srv := reflect.ValueOf(src)
-	for srv.Kind() == reflect.Ptr {
+	for srv.Kind() == reflect.Pointer {
 		if srv.IsNil() {
 			return ErrSrcIsNil
 		}
@@ -218,7 +218,7 @@ func handleEmbeddedField(sf reflect.StructField, fv reflect.Value, m map[string]
 	}
 
 	fieldType := sf.Type
-	if fieldType.Kind() == reflect.Ptr {
+	if fieldType.Kind() == reflect.Pointer {
 		if fv.IsNil() {
 			return true, nil
 		}
@@ -258,7 +258,7 @@ func getAnyFromValue(rv reflect.Value) (any, error) {
 		return nil, nil
 	}
 
-	if rv.Kind() == reflect.Ptr {
+	if rv.Kind() == reflect.Pointer {
 		if rv.IsNil() {
 			return nil, nil
 		}
@@ -355,7 +355,7 @@ func buildStructFieldMapRecursive(t reflect.Type, indexPath []int, out map[strin
 		// Handle embedded structs
 		if sf.Anonymous && isEmbeddedStruct(sf.Type) {
 			fieldType := sf.Type
-			if fieldType.Kind() == reflect.Ptr {
+			if fieldType.Kind() == reflect.Pointer {
 				fieldType = fieldType.Elem()
 			}
 
@@ -393,7 +393,7 @@ func buildStructFieldMapRecursive(t reflect.Type, indexPath []int, out map[strin
 }
 
 func isEmbeddedStruct(t reflect.Type) bool {
-	if t.Kind() == reflect.Ptr {
+	if t.Kind() == reflect.Pointer {
 		t = t.Elem()
 	}
 
@@ -402,7 +402,7 @@ func isEmbeddedStruct(t reflect.Type) bool {
 
 func setValue(dst reflect.Value, v any) error {
 	// handle pointer destination by allocating if nil
-	for dst.Kind() == reflect.Ptr {
+	for dst.Kind() == reflect.Pointer {
 		if dst.IsNil() {
 			dst.Set(reflect.New(dst.Type().Elem()))
 		}

@@ -82,7 +82,10 @@ func WithDotEnvFileNotFoundPanic(panicIfNotFound bool) DotEnvOption {
 // WithDotEnvFileAppendToOSEnv sets the flag to append variables from the .env
 // file to OS's env vars.
 //
-// Default: true.
+// Default: false. Mirroring .env entries into the live process environment
+// widens the blast radius of secrets (they are inherited by child processes
+// and exposed via the OS) and lets a .env entry overwrite process variables,
+// so it must be opted into explicitly.
 func WithDotEnvFileAppendToOSEnv(appendToOSEnv bool) DotEnvOption {
 	return func(p *DotEnvProvider) {
 		p.appendToOSEnv = appendToOSEnv
@@ -96,7 +99,7 @@ func NewDotEnvProvider(opts ...DotEnvOption) *DotEnvProvider {
 		EnvProvider:       NewEnvProvider(),
 		filePath:          defaultDotEnvFilePath,
 		panicFileNotFound: true,
-		appendToOSEnv:     true,
+		appendToOSEnv:     false,
 	}
 
 	for _, opt := range opts {
@@ -129,6 +132,12 @@ func (p *DotEnvProvider) Load() (map[string]any, error) {
 
 	if p.appendToOSEnv {
 		for k, v := range vars {
+			// Never let a .env entry overwrite security-relevant process
+			// variables (PATH, LD_PRELOAD, ...): that is an arbitrary
+			// environment-injection / code-execution vector (CWE-15).
+			if env.IsUnsafeVar(k) {
+				continue
+			}
 			if eErr := os.Setenv(k, v); eErr != nil {
 				return nil, fmt.Errorf("%w %s: %w", ErrSetEnv, k, eErr)
 			}

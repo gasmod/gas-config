@@ -5,15 +5,20 @@ import "strings"
 // unsafeEnvVars contains environment variables that should be filtered out for security.
 var unsafeEnvVars = map[string]bool{
 	// User/session info
-	"PATH":     true,
-	"HOME":     true,
-	"USER":     true,
-	"USERNAME": true,
-	"LOGNAME":  true,
-	"SHELL":    true,
-	"PWD":      true,
-	"OLDPWD":   true,
-	"MAIL":     true,
+	"PATH": true,
+	"HOME": true,
+	// Dynamic linker (code-execution vectors)
+	"LD_PRELOAD":            true,
+	"LD_LIBRARY_PATH":       true,
+	"DYLD_INSERT_LIBRARIES": true,
+	"DYLD_LIBRARY_PATH":     true,
+	"USER":                  true,
+	"USERNAME":              true,
+	"LOGNAME":               true,
+	"SHELL":                 true,
+	"PWD":                   true,
+	"OLDPWD":                true,
+	"MAIL":                  true,
 
 	// Locale/terminal
 	"TERM":      true,

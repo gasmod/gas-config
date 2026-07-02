@@ -130,23 +130,34 @@ func TestDotEnvProvider_WithDotEnvFile_FileNotFoundNoPanic(t *testing.T) {
 }
 
 func TestDotEnvProvider_AppendToOSEnv(t *testing.T) {
-	t.Parallel()
+	// NOT parallel: mutates the global process environment via os.Setenv.
+	const key = "TEST_KEY"
+	orig, had := os.LookupEnv(key)
+	t.Cleanup(func() {
+		if had {
+			_ = os.Setenv(key, orig)
+		} else {
+			_ = os.Unsetenv(key)
+		}
+	})
 
 	fsys := fstest.MapFS{
 		".env": &fstest.MapFile{
-			Data: []byte("TEST_KEY=test_value"),
+			Data: []byte(key + "=test_value"),
 		},
 	}
 
+	// Mirroring must be opted into explicitly; it is not the default.
 	p := providers.NewDotEnvProvider(
 		providers.WithDotEnvFilePath(".env"),
 		providers.WithDotEnvFileFS(&fsys),
+		providers.WithDotEnvFileAppendToOSEnv(true),
 	)
 
 	values, err := p.Load()
 	require.NoError(t, err)
 	assert.Equal(t, "test_value", values["test_key"])
-	assert.Equal(t, "test_value", os.Getenv("TEST_KEY"))
+	assert.Equal(t, "test_value", os.Getenv(key))
 }
 
 func TestDotEnvProvider_NoAppendToOSEnv(t *testing.T) {
