@@ -182,7 +182,7 @@ func (c *Config) LoadWithContext(ctx context.Context) error {
 	c.mu.Lock()
 
 	for _, p := range c.providers {
-		values, err := p.Load()
+		values, err := loadProvider(ctx, p)
 		if err != nil {
 			c.mu.Unlock()
 
@@ -304,4 +304,13 @@ func WithValidate(validate bool) BindOption {
 	return func(c *BindOptions) {
 		c.validate = validate
 	}
+}
+
+// loadProvider prefers context-aware loading when the provider supports it.
+func loadProvider(ctx context.Context, p providers.Provider) (map[string]any, error) {
+	if cp, ok := p.(providers.ContextProvider); ok {
+		return cp.LoadContext(ctx)
+	}
+
+	return p.Load()
 }
