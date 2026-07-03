@@ -103,6 +103,13 @@ type Provider interface {
     Name() string
     Load() (map[string]any, error)
 }
+
+// Optional: providers that call remote services can also implement this;
+// Config.LoadWithContext prefers LoadContext over Load when present.
+type ContextProvider interface {
+    Provider
+    LoadContext(ctx context.Context) (map[string]any, error)
+}
 ```
 
 ### Provider ordering
@@ -168,6 +175,31 @@ Same key conventions as `EnvProvider`: flat `snake_case` by default, `__` for ne
 
 Errors: `ErrDotEnvFilePathNotSet`, `ErrDotEnvFileReadFailed`,
 `ErrDotEnvParseFailed`, `ErrSetEnv`
+
+### AWS SecretsManager
+
+```go
+import "github.com/gasmod/gas-config/providers/secretsmanager"
+
+secretsmanager.NewProvider(opts ...Option) *Provider
+```
+
+| Option | Signature | Description |
+|--------|-----------|-------------|
+| Secret | `WithSecret(name string)` | JSON-object secret merged at root; repeatable, later wins |
+| Secret at key | `WithSecretAtKey(name, key string)` | Value nested at dot-notation key (object or raw string) |
+| Region | `WithRegion(region string)` | AWS region |
+| Static credentials | `WithStaticCredentials(id, secret string)` | Default AWS chain when unset |
+| Endpoint | `WithEndpoint(url string)` | Custom endpoint (LocalStack) |
+| Client | `WithClient(client API)` | Inject client/mock; other client options ignored |
+| Timeout | `WithTimeout(d time.Duration)` | Bounds `Load()` without caller context (default 10s) |
+
+Implements `providers.ContextProvider`: `Config.LoadWithContext` passes its
+context through. Eager fetch at load time; no caching or rotation.
+
+Constants: `ProviderName = "AWS SecretsManager"`, `DefaultTimeout = 10s`.
+Errors: `ErrNoSecretsConfigured`, `ErrSecretFetchFailed`,
+`ErrSecretDecodeFailed`, `ErrClientInitFailed`.
 
 ## Extensions
 

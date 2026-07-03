@@ -182,7 +182,18 @@ func (c *Config) LoadWithContext(ctx context.Context) error {
 	c.mu.Lock()
 
 	for _, p := range c.providers {
-		values, err := p.Load()
+		var (
+			values map[string]any
+			err    error
+		)
+
+		// Prefer context-aware loading when the provider supports it.
+		if cp, ok := p.(providers.ContextProvider); ok {
+			values, err = cp.LoadContext(ctx)
+		} else {
+			values, err = p.Load()
+		}
+
 		if err != nil {
 			c.mu.Unlock()
 

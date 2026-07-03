@@ -1,6 +1,7 @@
 package config_test
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -735,4 +736,57 @@ func TestConfig_SetDefaults_NoOverride_Complex(t *testing.T) {
 	assert.Equal(t, true, cfg.Get("database.ssl"))
 	assert.Equal(t, true, cfg.Get("cache.enabled"))
 	assert.Equal(t, 300, cfg.Get("cache.ttl"))
+}
+
+// contextAwareProvider implements providers.ContextProvider for testing.
+type contextAwareProvider struct {
+	gotCtx context.Context
+}
+
+func (p *contextAwareProvider) Name() string { return "ContextAware" }
+
+func (p *contextAwareProvider) Load() (map[string]any, error) {
+	return nil, errors.New("Load must not be called when LoadContext is implemented")
+}
+
+func (p *contextAwareProvider) LoadContext(ctx context.Context) (map[string]any, error) {
+	p.gotCtx = ctx
+
+	return map[string]any{"source": "context"}, nil
+}
+
+type loadCtxKey struct{}
+
+func TestLoadWithContext_PrefersContextProvider(t *testing.T) {
+	ctx := context.WithValue(context.Background(), loadCtxKey{}, "marker")
+
+	p := &contextAwareProvider{}
+	cfg := config.New(config.WithProvider(p))
+
+	require.NoError(t, cfg.LoadWithContext(ctx))
+	assert.Equal(t, "context", cfg.Get("source"))
+	require.NotNil(t, p.gotCtx)
+	assert.Equal(t, "marker", p.gotCtx.Value(loadCtxKey{}))
+}
+
+// failingContextProvider always fails from LoadContext.
+type failingContextProvider struct{}
+
+func (p *failingContextProvider) Name() string { return "FailingContextAware" }
+
+func (p *failingContextProvider) Load() (map[string]any, error) {
+	return nil, errors.New("Load must not be called")
+}
+
+func (p *failingContextProvider) LoadContext(_ context.Context) (map[string]any, error) {
+	return nil, errors.New("boom")
+}
+
+func TestLoadWithContext_ContextProviderErrorWrapped(t *testing.T) {
+	p := &failingContextProvider{}
+	cfg := config.New(config.WithProvider(p))
+
+	err := cfg.LoadWithContext(context.Background())
+	require.Error(t, err)
+	assert.ErrorIs(t, err, config.ErrProviderLoadFailed)
 }
