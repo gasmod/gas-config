@@ -165,6 +165,36 @@ config.New(
 )
 ```
 
+### AWS SecretsManager
+
+Loads secrets from [AWS Secrets Manager](https://aws.amazon.com/secrets-manager/).
+Secrets are registered explicitly and fetched eagerly at `Load()` time.
+
+```go
+import "github.com/gasmod/gas-config/providers/secretsmanager"
+
+cfg := config.New(
+    config.WithProvider(secretsmanager.NewProvider(
+        // JSON-object secret, deep-merged at the root.
+        secretsmanager.WithSecret("myapp/config"),
+        // Raw-string secret, placed at a dot-notation key.
+        secretsmanager.WithSecretAtKey("myapp/db-pass", "database.password"),
+        secretsmanager.WithRegion("eu-west-1"),
+        // Optional: static credentials (default AWS chain otherwise).
+        secretsmanager.WithStaticCredentials(accessKeyID, secretAccessKey),
+        // Optional: custom endpoint for LocalStack.
+        secretsmanager.WithEndpoint("http://localhost:4566"),
+        // Optional: timeout for Load() without a caller context (default 10s).
+        secretsmanager.WithTimeout(10*time.Second),
+    )),
+)
+```
+
+`WithSecret` requires the secret value to be a JSON object and merges it like
+a JSON file. `WithSecretAtKey` nests a JSON object at the key, or places the
+raw string there. Later registrations win on key conflicts. Missing or
+undecodable secrets fail `Load()`.
+
 ### Custom providers
 
 Implement the `Provider` interface:
@@ -175,6 +205,10 @@ type Provider interface {
     Load() (map[string]any, error)
 }
 ```
+
+Providers that call remote services can additionally implement
+`ContextProvider` (`LoadContext(ctx context.Context) (map[string]any, error)`);
+`LoadWithContext` passes its context to providers that support it.
 
 ## Provider ordering
 

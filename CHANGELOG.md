@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **AWS SecretsManager provider** — `providers/secretsmanager` loads secrets
+  eagerly at `Load()` time. `WithSecret` merges JSON-object secrets at the
+  root; `WithSecretAtKey` nests a value at a dot-notation key. Client options
+  mirror the rest of the Gas ecosystem (`WithRegion`, `WithStaticCredentials`,
+  `WithEndpoint`, `WithClient`, `WithTimeout`).
+- **`providers.ContextProvider`** — optional interface (`LoadContext(ctx)`);
+  `Config.LoadWithContext` now passes its context to providers that
+  implement it.
+
 ## [0.3.0] - 2026-07-02
 
 First open source release. Versions prior to 0.3.0 were developed in a private
