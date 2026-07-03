@@ -2,6 +2,7 @@ package secretsmanager
 
 import (
 	"context"
+	"fmt"
 
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -29,7 +30,7 @@ func (p *Provider) getClient(ctx context.Context) (API, error) {
 
 	awsCfg, err := awsconfig.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load AWS config: %w", err)
 	}
 
 	p.client = awssm.NewFromConfig(awsCfg, func(o *awssm.Options) {

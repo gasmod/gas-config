@@ -47,13 +47,13 @@ type secretRef struct {
 
 // Provider loads configuration from AWS Secrets Manager.
 type Provider struct {
-	secrets         []secretRef
 	region          string
 	endpoint        string
 	accessKeyID     string
 	secretAccessKey string
-	timeout         time.Duration
 	client          API
+	secrets         []secretRef
+	timeout         time.Duration
 }
 
 var (
