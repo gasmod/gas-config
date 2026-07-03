@@ -101,7 +101,7 @@ func TestWithGasEnv_IntegrationWithGasConfig(t *testing.T) {
 		}
 
 		if config.Database.Port != 5432 {
-			t.Errorf("Database port = %q, want 5432", config.Database.Port)
+			t.Errorf("Database port = %d, want 5432", config.Database.Port)
 		}
 
 		// Test environment methods work on bound config

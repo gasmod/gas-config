@@ -66,13 +66,13 @@ func main() {
 }
 
 func initEnvVars() {
-	_ = os.Setenv("SERVER_HOST", serverDefaultHost)
-	_ = os.Setenv("SERVER_PORT", fmt.Sprintf("%d", serverDefaultPort))
-	_ = os.Setenv("DATABASE_HOST", databaseDefaultHost)
-	_ = os.Setenv("DATABASE_PORT", fmt.Sprintf("%d", databaseDefaultPort))
-	_ = os.Setenv("DATABASE_USER", databaseDefaultUser)
-	_ = os.Setenv("DATABASE_PASSWORD", databaseDefaultPassword)
-	_ = os.Setenv("LOGGING_LEVEL", loggingDefaultLevel)
+	_ = os.Setenv("SERVER__HOST", serverDefaultHost)
+	_ = os.Setenv("SERVER__PORT", fmt.Sprintf("%d", serverDefaultPort))
+	_ = os.Setenv("DATABASE__HOST", databaseDefaultHost)
+	_ = os.Setenv("DATABASE__PORT", fmt.Sprintf("%d", databaseDefaultPort))
+	_ = os.Setenv("DATABASE__USER", databaseDefaultUser)
+	_ = os.Setenv("DATABASE__PASSWORD", databaseDefaultPassword)
+	_ = os.Setenv("LOGGING__LEVEL", loggingDefaultLevel)
 }
 
 func validateConfig(cfg *Config) {
